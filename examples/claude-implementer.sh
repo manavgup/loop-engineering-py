@@ -12,21 +12,20 @@ set -eu
 
 PROMPT="$BG_PROMPT
 
-You are implementing ONE Python module so its pytest test passes.
+You are implementing ONE Python module so its pytest test passes. The TEST is the
+complete spec — read it first and implement exactly what it requires, nothing more.
 
-- The module currently raises NotImplementedError; replace the stub bodies with a real,
-  faithful port of the corresponding Node source. Keep the public function names and
-  signatures exactly as the test imports them.
-- Follow PEP 8 (the change is rejected if \`ruff check\` flags the file).
-- COVERAGE-OF-CHANGE: every changed source line must be executed by a test, or the change
-  is rejected. Prefer a minimal implementation. If a faithful port still has lines the
-  existing test does not execute, you MAY extend the matching test file with NEW test
-  functions/assertions that exercise those lines.
-    * Add only REAL assertions about real behavior — never vacuous \`assert True\` padding.
-    * NEVER delete a test, weaken/remove an existing assertion, or change an existing
-      expected value. Those are rejected (the spec is append-only).
-- Editable files this attempt: ${BG_ITEM_PATH%%:*} and its tests/ file(s) ONLY.
-- Verify locally before finishing: python3 -m pytest <the matching tests/ file> --cov=. -q
+- Edit ONLY this file: ${BG_ITEM_PATH%%:*}  (the matching tests/ file is frozen — do NOT touch it)
+- The module currently raises NotImplementedError; replace the stub bodies with a real
+  implementation. Keep the public function names and signatures exactly as the test imports them.
+- Write the MINIMAL implementation that makes the test pass. COVERAGE-OF-CHANGE: every line
+  you write must be executed by the test, or the change is REJECTED. So:
+    * Do NOT add defensive branches, error handling, helper functions, __main__ blocks, or
+      code paths the test never triggers — each unexecuted line fails the gate.
+    * If you are tempted to add an edge-case guard the test does not exercise, leave it out.
+- Follow PEP 8 (rejected if \`ruff check\` flags the file); keep lines ≤ 100 chars.
+- Verify before finishing: python3 -m pytest <the matching tests/ file> --cov=backlog_grinder -q
+  and confirm the module shows no missing lines.
 
 Item: $BG_ITEM_TITLE
 Backlog fix note: ${BG_ITEM_FIX:-（none）}
