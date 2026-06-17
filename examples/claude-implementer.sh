@@ -12,17 +12,21 @@ set -eu
 
 PROMPT="$BG_PROMPT
 
-You are implementing ONE Python module so its EXISTING pytest test passes.
+You are implementing ONE Python module so its pytest test passes.
 
-- Edit ONLY this file: ${BG_ITEM_PATH%%:*}
-- The test file under tests/ is the FROZEN SPEC. Do NOT modify, delete, or weaken any test.
 - The module currently raises NotImplementedError; replace the stub bodies with a real,
-  faithful implementation. Keep the public function names and signatures exactly as the
-  test imports them.
+  faithful port of the corresponding Node source. Keep the public function names and
+  signatures exactly as the test imports them.
 - Follow PEP 8 (the change is rejected if \`ruff check\` flags the file).
-- A behavior change with no covering test is rejected, but the test already exists here —
-  just make it pass without touching it.
-- Verify locally before finishing: python3 -m pytest <the matching tests/ file> -q
+- COVERAGE-OF-CHANGE: every changed source line must be executed by a test, or the change
+  is rejected. Prefer a minimal implementation. If a faithful port still has lines the
+  existing test does not execute, you MAY extend the matching test file with NEW test
+  functions/assertions that exercise those lines.
+    * Add only REAL assertions about real behavior — never vacuous \`assert True\` padding.
+    * NEVER delete a test, weaken/remove an existing assertion, or change an existing
+      expected value. Those are rejected (the spec is append-only).
+- Editable files this attempt: ${BG_ITEM_PATH%%:*} and its tests/ file(s) ONLY.
+- Verify locally before finishing: python3 -m pytest <the matching tests/ file> --cov=. -q
 
 Item: $BG_ITEM_TITLE
 Backlog fix note: ${BG_ITEM_FIX:-（none）}

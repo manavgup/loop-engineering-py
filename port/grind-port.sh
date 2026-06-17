@@ -67,15 +67,23 @@ grind_module() {
     - _Fix:_ port scripts/$src.mjs to PEP-8 Python so $tests passes; edit only backlog_grinder/$mod.py, never the tests.
 EOF
 
+  # Scope = the module file + its own test file(s). The implementer may EXTEND
+  # the test to cover a faithful implementation (the harness's intended
+  # coverage-closing loop); guards block test DELETION and the verifier blocks
+  # assertion WEAKENING, so the spec can't be gutted. --cov=. measures tests too
+  # so newly-added test lines count as executed.
+  local allow_json="\"backlog_grinder/$mod.py\""
+  for tf in $tests; do allow_json="$allow_json, \"$tf\""; done
+
   cat > "$config" <<EOF
 {
   "backlogPath": ".grind-tmp/$mod.backlog.md",
-  "gateCmd": "python3 -m pytest $tests --cov=backlog_grinder --cov-report=xml:coverage.xml --cov-fail-under=0 -q",
+  "gateCmd": "python3 -m pytest $tests --cov=. --cov-report=xml:coverage.xml --cov-fail-under=0 -q",
   "coverage": { "format": "cobertura", "file": "coverage.xml" },
   "implementerCmd": "$IMPL",
   "verifierCmd": "sh examples/verifier-pep8.sh",
-  "allow": ["backlog_grinder/$mod.py"],
-  "deny": ["tests/"],
+  "allow": [$allow_json],
+  "deny": [],
   "maxAttempts": $MAX_ATTEMPTS,
   "projectName": "loop-engineering-py port: $mod"
 }
