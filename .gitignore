@@ -1,0 +1,22 @@
+# coverage artifacts (must be ignored so the grinder's scope guards don't see them in the diff)
+coverage.xml
+.coverage
+.coverage.*
+htmlcov/
+
+# grinder working dir
+.backlog-grinder/
+
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# grinder per-module scratch
+.grind-tmp/
