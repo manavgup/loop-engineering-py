@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "backlog-grinder"
 version = "0.1.0"
-description = "A model-agnostic loop-engineering harness (Python port of loop-engineering)."
+description = "A model-agnostic loop-engineering harness: drain a finite backlog against a repo behind a hybrid checker."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }

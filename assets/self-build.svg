@@ -11,21 +11,21 @@
     </style>
   </defs>
   <rect x="0" y="0" width="1040" height="400" rx="16" fill="#0d1117"/>
-  <text x="40" y="46" font-size="22" class="t">Built by the harness grinding itself</text>
-  <text x="40" y="70" class="mut">The Node loop-engineering harness is the stable grinder; this repo is its target. The port was driven test-first.</text>
+  <text x="40" y="46" font-size="22" class="t">Built test-first, behind its own checker</text>
+  <text x="40" y="70" class="mut">The pytest suite is the frozen spec; a grinder fills each stub behind the hybrid checker, committing per module.</text>
 
   <!-- grinder on top -->
   <rect x="372" y="92" width="296" height="58" rx="11" fill="#10243b" stroke="#3b6ea5" stroke-width="1.5"/>
-  <text x="520" y="118" class="t" fill="#6cb6ff" text-anchor="middle">loop-engineering (Node) — the grinder</text>
+  <text x="520" y="118" class="t" fill="#6cb6ff" text-anchor="middle">backlog-grind — the grinder</text>
   <text x="520" y="138" class="mut" text-anchor="middle">drives the implementer · runs the gate · commits or reverts</text>
   <path d="M520 150 V196" fill="none" stroke="#6cb6ff" stroke-width="1.6" marker-end="url(#mb)"/>
 
   <!-- spine: stage 1 -> 2 -> 3 -->
   <rect x="36" y="200" width="288" height="138" rx="11" fill="#18222f" stroke="#33455f" stroke-width="1.5"/>
-  <text x="56" y="228" class="t">① port the spec</text>
-  <text x="56" y="252" class="mut">every *.test.mjs → pytest</text>
+  <text x="56" y="228" class="t">① write the spec</text>
+  <text x="56" y="252" class="mut">pytest suite written first</text>
   <text x="56" y="272" class="mut">stubs raise NotImplementedError</text>
-  <text x="56" y="298" class="mut">the test is the frozen contract</text>
+  <text x="56" y="298" class="mut">the test is the contract</text>
   <rect x="56" y="308" width="180" height="22" rx="6" fill="#2a1518" stroke="#8a3b3b"/>
   <text x="146" y="323" class="mut" fill="#ff7b72" text-anchor="middle">suite starts RED</text>
 
@@ -49,6 +49,6 @@
     <path d="M752 269 H788" marker-end="url(#m)"/>
   </g>
 
-  <text x="40" y="372" class="mut">13 / 14 modules landed by pure dogfooding; the cli orchestrator + a few integration bugs the e2e tests exposed were finished by hand —</text>
-  <text x="40" y="390" class="mut">including a real coverage-of-change bug in the upstream harness, fixed there in turn.</text>
+  <text x="40" y="372" class="mut">Most modules landed untouched by hand; the cli orchestrator + a few integration bugs the e2e tests caught were finished manually —</text>
+  <text x="40" y="390" class="mut">including a real coverage-of-change bug, fixed in turn.</text>
 </svg>

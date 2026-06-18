@@ -4,8 +4,6 @@ Proves the whole tool runs end to end:
   parse -> stale-check -> grind -> gate+coverage+guards -> commit ->
   STATE + provenance on disk, with honest end states.
 
-Faithful Python port of scripts/cli.e2e.test.mjs.
-
 Python-world adaptations
 ------------------------
 * Gate command: instead of ``node --test ... --test-reporter=lcov``, we drive a

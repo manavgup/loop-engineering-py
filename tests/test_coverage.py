@@ -1,4 +1,4 @@
-"""Pytest port of coverage.test.mjs — faithful behavioral port, synchronous, PEP-8."""
+"""Tests for backlog_grinder.coverage."""
 from backlog_grinder.coverage import changed_lines, check_coverage, is_behavioral
 
 # Unified diff used across multiple tests.

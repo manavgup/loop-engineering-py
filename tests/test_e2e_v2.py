@@ -1,4 +1,4 @@
-"""Faithful pytest port of e2e-v2.test.mjs — PROOF 1–6.
+"""End-to-end proofs (PROOF 1–6) of the driver invariants.
 
 PROOF 1: coverage reject
 PROOF 2: repeat-escalation

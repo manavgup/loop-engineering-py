@@ -1,6 +1,6 @@
 """Synthetic E2E: guards block cheats on a real temp git repo.
 
-Faithful Python port of scripts/e2e.test.mjs.
+End-to-end tests for the harness on a real temp git repo.
 
 Tests run_item (the inner driver loop) directly with injected deps, so they
 exercise the guards/gate/commit pipeline without needing a real implementer or
@@ -19,7 +19,7 @@ Python-world adaptations
   parity with the JS fixture; the Python driver calls git["head"](cwd).
 
 * ``git_rm`` (the cheat in test 2) uses subprocess so it operates on the real
-  temp repo rather than needing the Node-specific ``execFileSync``.
+  temp repo driven via subprocess.
 
 * Coverage for test 1 is expressed as a plain Python dict mapping filename
   to a set of hit line numbers — identical shape to the JS ``Map`` equivalent

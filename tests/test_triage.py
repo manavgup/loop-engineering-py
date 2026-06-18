@@ -1,5 +1,5 @@
 """
-Faithful pytest port of triage.test.mjs.
+Tests for backlog_grinder.triage.
 All tests are synchronous plain-def; no async/await.
 """
 from backlog_grinder.triage import summarize, to_state_markdown

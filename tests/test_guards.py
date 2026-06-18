@@ -1,4 +1,4 @@
-"""Faithful pytest port of guards.test.mjs.
+"""Tests for backlog_grinder.guards.
 
 Covers:
 - deleted test file → hard violation

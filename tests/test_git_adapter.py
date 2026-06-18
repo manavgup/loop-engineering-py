@@ -1,4 +1,4 @@
-"""Pytest port of git-adapter.test.mjs — faithful behavioral port, synchronous."""
+"""Tests for backlog_grinder.git_adapter — synchronous."""
 
 import subprocess
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 from backlog_grinder.git_adapter import make_git
 
 # ---------------------------------------------------------------------------
-# Helpers (mirror the JS helpers in git-adapter.test.mjs)
+# Helpers
 # ---------------------------------------------------------------------------
 
 def _git(cwd, *args):
@@ -47,7 +47,6 @@ def test_diff_stages_untracked_and_tracked(tmp_path):
     """
     diff() stages everything (incl. untracked) then diffs the index against HEAD,
     so guards see exactly what a commit would include (§7).
-    Mirrors: 'diff stages untracked + tracked and shows them against HEAD'
     """
     repo = _make_repo(tmp_path)
     g = make_git()
@@ -64,7 +63,6 @@ def test_diff_stages_untracked_and_tracked(tmp_path):
 def test_commit_advances_head(tmp_path):
     """
     commit() stages everything and creates a new commit; head() returns the new SHA.
-    Mirrors: 'commit advances HEAD; head returns the new sha'
     """
     repo = _make_repo(tmp_path)
     g = make_git()
@@ -82,7 +80,6 @@ def test_restore_resets_tracked_and_removes_untracked(tmp_path):
     """
     restore() = reset --hard HEAD + clean -fd, so a rejected attempt can never
     leak files into the next item (§7 invariant).
-    Mirrors: 'restore resets tracked AND removes untracked (§7)'
     """
     repo = _make_repo(tmp_path)
     g = make_git()

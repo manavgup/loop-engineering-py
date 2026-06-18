@@ -1,4 +1,4 @@
-"""Pytest port of gate.test.mjs — synchronous, no async/await."""
+"""Tests for backlog_grinder.gate — synchronous."""
 import os
 import tempfile
 

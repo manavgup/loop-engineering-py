@@ -1,5 +1,5 @@
 """
-Faithful pytest port of implementer.test.mjs.
+Tests for backlog_grinder.implementer.
 All tests are synchronous plain-def; no async/await.
 """
 import os

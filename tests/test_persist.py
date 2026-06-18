@@ -1,4 +1,4 @@
-"""Tests for backlog_grinder.persist — faithful port of persist.test.mjs."""
+"""Tests for backlog_grinder.persist."""
 
 import json
 

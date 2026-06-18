@@ -1,4 +1,4 @@
-"""Pytest port of coverage-adapter.test.mjs — faithful behavioral port, synchronous, PEP-8."""
+"""Tests for backlog_grinder.coverage_adapter."""
 import os
 import tempfile
 

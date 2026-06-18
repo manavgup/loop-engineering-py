@@ -1,4 +1,4 @@
-"""Pytest port of provenance.test.mjs — synchronous, no async/await.
+"""Tests for backlog_grinder.provenance — synchronous.
 
 §6 audit records: every approved commit emits a machine-generated record so
 "why did the system make this edit and what did it check" is answerable from

@@ -1,4 +1,4 @@
-"""Tests for backlog_grinder.state — faithful port of state.test.mjs."""
+"""Tests for backlog_grinder.state."""
 
 from backlog_grinder.state import mark_done, pending_items, reconcile, rehydrate, save_item
 

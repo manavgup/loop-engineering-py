@@ -18,10 +18,10 @@ shell command you choose.
 > committed unless a test executed the changed lines."** That defeats the delete-the-test cheat,
 > the move-out-of-scope cheat, and the silent no-test fix in one stroke.
 
-This is the Python/PEP-8 sibling of the Node harness in
-[`loop-engineering`](https://github.com/manavgup/loop-engineering) — and a working demonstration
-of the idea behind it: [loop engineering](https://cobusgreyling.substack.com/p/loop-engineering)
-is designing the system that prompts your agents instead of prompting them by hand.
+The idea: stop hand-prompting an agent to fix findings one by one. Hand it a finite, triaged
+backlog and a checker it cannot talk its way past, then let it drain the list while you review the
+provenance. The harness *is* the system; the model — if you use one at all — is just the
+implementer you plug in.
 
 ## How it fits together
 
@@ -134,8 +134,8 @@ Each item gets a content-hash id. Items whose `path` no longer exists are parked
 | Porting / re-implementation, test-first | one item per module | exactly how **this** repo was built (below) |
 
 Run it report-only first (a deterministic or no-op implementer), then graduate to an assisted
-implementer, then to unattended — the same phased **L1 → L2 → L3** rollout the loop-engineering
-playbook recommends.
+implementer, then to unattended — a phased **L1 → L2 → L3** rollout (report-only → assisted →
+unattended) as your trust in the loop grows.
 
 ## Outputs, safety & resume
 
@@ -160,24 +160,25 @@ Add your coverage artifact and `.backlog-grinder/` to the target repo's `.gitign
 - **halted** — work remains: budget / `stop_file` hit, or a config error such as a green gate that
   emitted no coverage map (`blocked-coverage-config`) (exit 2)
 
-## Built by the harness grinding itself
+## Built test-first, behind its own checker
 
 <p align="center">
-  <img src="assets/self-build.svg" alt="built test-first by the Node harness" width="100%">
+  <img src="assets/self-build.svg" alt="built test-first behind a hybrid checker" width="100%">
 </p>
 
-This package is also a self-referential demo. The Node `loop-engineering` harness is the stable
-grinder; this repo was its target. The `*.test.mjs` suite was ported to pytest **first** (the
-frozen spec), every module started as a stub raising `NotImplementedError`, and the grinder filled
-each one — behind `gate ∧ coverage-of-change ∧ scope guards ∧ a ruff verifier`, committing per
-module with provenance. **13 of 14 modules landed by pure dogfooding**; the `cli` orchestrator and
-a handful of integration bugs the end-to-end tests exposed were finished by hand — including a real
-coverage-of-change bug in the upstream harness, which was fixed there in turn.
+This package was built the way it runs. The pytest suite was written **first** as the frozen spec;
+every module started as a stub raising `NotImplementedError`; then a grinder filled each one behind
+exactly this hybrid checker — `gate ∧ coverage-of-change ∧ scope guards ∧ a ruff verifier` —
+committing per module with provenance. Most modules landed untouched by hand; the `cli`
+orchestrator and a few integration bugs the end-to-end tests caught were finished manually,
+including a real coverage-of-change bug that was fixed in turn.
+
+`scripts/grind.sh` is the per-module runner that drove it — and drives the same loop over any repo:
 
 ```bash
-port/grind-port.sh                       # drive the Node grinder over this repo, tier by tier
-port/grind-port.sh parse guards          # a subset, in dependency order
-IMPL='sh examples/my-implementer.sh' port/grind-port.sh
+scripts/grind.sh                         # drive backlog-grind per module, tier by tier
+scripts/grind.sh parse guards            # a subset, in dependency order
+IMPL='sh examples/my-implementer.sh' scripts/grind.sh
 ```
 
 ## Library API
@@ -196,10 +197,10 @@ from backlog_grinder.persist import load_state, make_provenance_writer
 from backlog_grinder.cli import run_grind                       # the orchestrator the CLI uses
 ```
 
-## Design notes (vs. the Node original)
+## Design notes
 
-- **Synchronous.** The Node core is async (Promises); here dependencies are ordinary callables and
-  functions return values directly.
+- **Synchronous core.** Dependencies are ordinary callables and functions return values directly —
+  no async, no event loop.
 - **Plain dicts, snake_case keys.** Items, gate results, verdicts, and lessons are dicts
   (`gate_output`, `coverage_ok`, …) rather than objects.
 - **Coverage is statement-aware.** For coverage.py/cobertura, non-executable changed lines
@@ -219,4 +220,4 @@ from backlog_grinder.cli import run_grind                       # the orchestrat
 
 ## License
 
-MIT. Concept and Node harness: [loop-engineering](https://github.com/manavgup/loop-engineering).
+MIT.

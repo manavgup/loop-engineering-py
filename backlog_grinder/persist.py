@@ -4,7 +4,7 @@ state.py keeps the in-memory shape {"items": {}, "last_good_sha": ...};
 these functions read/write it as JSON so a halt/crash can resume.
 Provenance is append-only JSONL so the audit trail is on disk and never lost.
 
-No async here — unlike the Node originals, all callables are plain synchronous
+All callables are plain synchronous
 functions (fs.readFileSync / writeFileSync / appendFileSync → open() / pathlib).
 """
 

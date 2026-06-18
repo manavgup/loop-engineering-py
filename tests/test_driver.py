@@ -1,4 +1,4 @@
-"""Faithful pytest port of driver.test.mjs.
+"""Tests for backlog_grinder.driver.
 
 Tests cover run_item only. deps are plain dicts of callables (no async).
 """

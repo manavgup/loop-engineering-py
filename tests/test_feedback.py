@@ -1,4 +1,4 @@
-"""Faithful pytest port of feedback.test.mjs.
+"""Tests for backlog_grinder.feedback.
 
 JS assert.match(str, /regex/) -> re.search(pattern, str) is not None.
 JS assert.equal -> plain assert with ==.

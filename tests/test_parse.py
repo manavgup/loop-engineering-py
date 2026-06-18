@@ -1,4 +1,4 @@
-"""Faithful pytest port of parse.test.mjs.
+"""Tests for backlog_grinder.parse.
 
 Every assertion in the JS test suite is reproduced here as plain def test_*
 functions using assert statements — no async, no pytest-asyncio.
@@ -9,7 +9,7 @@ import re
 from backlog_grinder.parse import is_stale, parse_backlog, parse_path_ref
 
 # ---------------------------------------------------------------------------
-# Shared fixture — same markdown verbatim as in parse.test.mjs
+# Shared markdown fixture
 # ---------------------------------------------------------------------------
 
 FIXTURE = """\

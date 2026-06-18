@@ -17,7 +17,7 @@ from .guards import check_guards
 from .state import mark_done, pending_items, save_item
 
 # ---------------------------------------------------------------------------
-# Module-level constants (ported verbatim from driver.mjs)
+# Module-level constants
 # ---------------------------------------------------------------------------
 
 BASE = (
