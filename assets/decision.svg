@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 760" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#56d364"/></marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ff7b72"/></marker>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f0b429"/></marker>
+    <style>
+      text{fill:#e6edf3;font-size:13px}
+      .t{font-weight:700}
+      .mut{fill:#93a4b8;font-size:11.5px}
+      .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+      .step{fill:#18222f;stroke:#33455f;stroke-width:1.5}
+    </style>
+  </defs>
+  <rect x="0" y="0" width="960" height="760" rx="16" fill="#0d1117"/>
+  <text x="40" y="48" font-size="22" class="t">How one item is decided</text>
+  <text x="40" y="72" class="mut">Each attempt walks the spine top-to-bottom. A green arrow means "passed"; any failure exits right and the tree is reverted.</text>
+
+  <!-- spine -->
+  <g>
+    <rect x="60" y="96" width="320" height="50" rx="10" fill="#101a27" stroke="#33455f" stroke-width="1.5"/>
+    <text x="78" y="120" class="t">implement</text><text x="78" y="137" class="mut">implementer edits the working tree</text>
+
+    <rect x="60" y="186" width="320" height="50" rx="10" class="step"/>
+    <text x="78" y="210" class="t">gate · run the test command</text><text x="78" y="227" class="mut">a red result is re-run once (flake-checked)</text>
+
+    <rect x="60" y="276" width="320" height="50" rx="10" class="step"/>
+    <text x="78" y="300" class="t">coverage map present on green?</text><text x="78" y="317" class="mut">a green gate with no map is a config error</text>
+
+    <rect x="60" y="366" width="320" height="50" rx="10" class="step"/>
+    <text x="78" y="390" class="t">scope guards</text><text x="78" y="407" class="mut">inside allow · not in deny · no test tamper</text>
+
+    <rect x="60" y="456" width="320" height="50" rx="10" class="step" stroke="#3ee8c5"/>
+    <text x="78" y="480" class="t" fill="#3ee8c5">coverage-of-change</text><text x="78" y="497" class="mut">every changed source line was executed by a test</text>
+
+    <rect x="60" y="546" width="320" height="50" rx="10" class="step"/>
+    <text x="78" y="570" class="t">verifier (optional)</text><text x="78" y="587" class="mut">sees the staged diff · exit 0 = approve</text>
+
+    <rect x="60" y="640" width="320" height="56" rx="10" fill="#10261f" stroke="#2f7f5e" stroke-width="1.5"/>
+    <text x="78" y="666" class="t" fill="#56d364">✓ commit → provenance record → mark done</text>
+    <text x="78" y="685" class="mut">the last-good commit advances</text>
+  </g>
+
+  <!-- pass arrows -->
+  <g fill="none" stroke="#56d364" stroke-width="1.7">
+    <path d="M220 146 V186" marker-end="url(#g)"/>
+    <path d="M220 236 V276" marker-end="url(#g)"/>
+    <path d="M220 326 V366" marker-end="url(#g)"/>
+    <path d="M220 416 V456" marker-end="url(#g)"/>
+    <path d="M220 506 V546" marker-end="url(#g)"/>
+    <path d="M220 596 V640" marker-end="url(#g)"/>
+  </g>
+  <g class="mut" fill="#56d364">
+    <text x="228" y="170">pass</text><text x="228" y="260">green</text><text x="228" y="350">yes</text>
+    <text x="228" y="440">ok</text><text x="228" y="530">covered</text><text x="228" y="624">approve</text>
+  </g>
+
+  <!-- right exits -->
+  <rect x="560" y="186" width="340" height="50" rx="10" fill="#2a2113" stroke="#8a6a2b" stroke-width="1.5"/>
+  <text x="578" y="210" class="t" fill="#f0b429">park — infra error / flaky</text><text x="578" y="227" class="mut">attempt NOT spent · waits for a human</text>
+
+  <rect x="560" y="276" width="340" height="50" rx="10" fill="#2a2113" stroke="#8a6a2b" stroke-width="1.5"/>
+  <text x="578" y="300" class="t" fill="#f0b429">halt — blocked-coverage-config</text><text x="578" y="317" class="mut mono">run stops: gate green but emitted no map</text>
+
+  <rect x="560" y="396" width="340" height="170" rx="11" fill="#2a1518" stroke="#8a3b3b" stroke-width="1.5"/>
+  <text x="578" y="422" class="t" fill="#ff7b72">✗ revert + record failure</text>
+  <text x="578" y="446" class="mut mono">git reset --hard HEAD &amp;&amp; git clean -fd</text>
+  <text x="578" y="470" class="mut">guards: out of scope / weakened test</text>
+  <text x="578" y="490" class="mut">coverage: changed line not executed</text>
+  <text x="578" y="510" class="mut">verifier: rejected</text>
+  <text x="578" y="536" class="mut">the retry prompt names exactly what failed —</text>
+  <text x="578" y="553" class="mut">gate output, violations, uncovered lines</text>
+
+  <!-- exit arrows -->
+  <path d="M380 211 H560" fill="none" stroke="#f0b429" stroke-width="1.6" marker-end="url(#a)"/>
+  <path d="M380 301 H560" fill="none" stroke="#f0b429" stroke-width="1.6" marker-end="url(#a)"/>
+  <g fill="none" stroke="#ff7b72" stroke-width="1.6">
+    <path d="M380 391 C470 391 470 440 560 440" marker-end="url(#r)"/>
+    <path d="M380 481 H560" marker-end="url(#r)"/>
+    <path d="M380 571 C470 571 470 500 560 500" marker-end="url(#r)"/>
+  </g>
+  <g fill="#93a4b8" font-size="11">
+    <text x="392" y="384">fail</text><text x="392" y="474">uncovered</text><text x="392" y="564">reject</text>
+    <text x="392" y="204">infra/flaky</text><text x="392" y="294">no map</text>
+  </g>
+
+  <!-- feedback loop: revert -> back to implement, crossing the guards/coverage gap (y~436) -->
+  <path d="M560 408 H402 V436 H30 V121 H54" fill="none" stroke="#ff7b72" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#r)"/>
+  <text x="410" y="402" class="mut" fill="#ff7b72">retry · or abandon</text>
+</svg>
