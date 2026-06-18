@@ -52,6 +52,10 @@ def load_coverage(*, format: str, file: str, repo_cwd: str | None = None) -> dic
     remapped: dict[str, set[int]] = {}
     for name, lines in coverage.items():
         if repo_cwd is not None:
-            name = os.path.relpath(os.path.join(root, name), repo_cwd)
+            # realpath both sides: coverage.py writes the resolved <source> path
+            # (e.g. /private/var/... on macOS) while repo_cwd may be the symlink
+            # (/var/...); without resolving, relpath yields a bogus ../../ key.
+            abs_name = os.path.realpath(os.path.join(root, name))
+            name = os.path.relpath(abs_name, os.path.realpath(repo_cwd))
         remapped[name] = lines
     return remapped

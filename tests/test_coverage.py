@@ -39,3 +39,31 @@ def test_check_coverage_fails_when_changed_source_line_was_not_executed():
 def test_check_coverage_passes_when_changed_lines_were_executed():
     cov = {"src/x.py": {10, 11, 12}}
     assert check_coverage(DIFF, cov)["ok"] is True
+
+
+# Regression: a real `git diff` for a DELETED file ends its header with
+# "+++ /dev/null" (which FILE_RE does not match) and contains only '-' lines.
+# changed_lines must not index result[None] (it crashed before the guard was added),
+# and a multi-line addition must number each added line distinctly.
+def test_changed_lines_handles_deletion_and_multiline_additions():
+    diff = (
+        "diff --git a/t/test_x.py b/t/test_x.py\n"
+        "deleted file mode 100644\n"
+        "--- a/t/test_x.py\n"
+        "+++ /dev/null\n"
+        "@@ -1,2 +0,0 @@\n"
+        "-def test_x():\n"
+        "-    assert True\n"
+        "diff --git a/src/y.py b/src/y.py\n"
+        "--- a/src/y.py\n"
+        "+++ b/src/y.py\n"
+        "@@ -1,0 +1,3 @@\n"
+        "+a = 1\n"
+        "+b = 2\n"
+        "+c = 3\n"
+    )
+    result = changed_lines(diff)
+    # The deleted file contributes no added lines (and must not crash on +++ /dev/null).
+    assert result.get("t/test_x.py", set()) == set()
+    # Each added line in the multi-line hunk is numbered distinctly from the hunk start.
+    assert result["src/y.py"] == {1, 2, 3}

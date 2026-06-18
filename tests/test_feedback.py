@@ -146,9 +146,12 @@ def test_append_lesson_dedups_by_pattern():
 
 def test_relevant_lessons_injects_only_category_matching_lessons_ranked_and_capped():
     store = [
-        {"id": "l1", "pattern": "p1", "fix": "f1", "confidence": 3, "category": "bug-fix", "status": "active"},
-        {"id": "l2", "pattern": "p2", "fix": "f2", "confidence": 9, "category": "bug-fix", "status": "active"},
-        {"id": "l3", "pattern": "p3", "fix": "f3", "confidence": 5, "category": "security", "status": "active"},
+        {"id": "l1", "pattern": "p1", "fix": "f1", "confidence": 3,
+         "category": "bug-fix", "status": "active"},
+        {"id": "l2", "pattern": "p2", "fix": "f2", "confidence": 9,
+         "category": "bug-fix", "status": "active"},
+        {"id": "l3", "pattern": "p3", "fix": "f3", "confidence": 5,
+         "category": "security", "status": "active"},
     ]
     ids = [le["id"] for le in relevant_lessons(store, {"category": "bug-fix"}, cap=5)]
     assert ids == ["l2", "l1"]
@@ -156,7 +159,8 @@ def test_relevant_lessons_injects_only_category_matching_lessons_ranked_and_capp
 
 
 def test_unrelated_category_lesson_is_never_injected():
-    store = [{"id": "l1", "pattern": "p", "fix": "f", "confidence": 9, "category": "security", "status": "active"}]
+    store = [{"id": "l1", "pattern": "p", "fix": "f", "confidence": 9,
+              "category": "security", "status": "active"}]
     assert relevant_lessons(store, {"category": "bug-fix"}) == []
 
 
@@ -166,7 +170,8 @@ def test_unrelated_category_lesson_is_never_injected():
 
 
 def test_retract_lesson_drops_confidence_and_evicts_below_threshold():
-    store = [{"id": "l1", "pattern": "p", "fix": "f", "confidence": 1, "category": "bug-fix", "status": "active"}]
+    store = [{"id": "l1", "pattern": "p", "fix": "f", "confidence": 1,
+              "category": "bug-fix", "status": "active"}]
     retract_lesson(store, "l1")
     assert store[0]["status"] == "evicted"  # 1 -> 0 -> evicted
     assert len(relevant_lessons(store, {"category": "bug-fix"})) == 0  # evicted not injected
@@ -178,7 +183,8 @@ def test_retract_lesson_drops_confidence_and_evicts_below_threshold():
 
 
 def test_lessons_adapter_relevant_and_retract_match_driver_contract():
-    store = [{"id": "l1", "pattern": "p", "fix": "f", "confidence": 1, "category": "bug-fix", "status": "active"}]
+    store = [{"id": "l1", "pattern": "p", "fix": "f", "confidence": 1,
+              "category": "bug-fix", "status": "active"}]
     adapter = make_lessons_adapter(store, cap=5)
     item = {"id": "i1", "category": "bug-fix"}
     ids = [le["id"] for le in adapter.relevant(item)]

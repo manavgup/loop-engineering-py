@@ -76,7 +76,9 @@ def run_item(item, *, deps, state, gate_cmd, allow=None, deny=None, max_attempts
     Returns the (mutated) item.
     """
     cwd = deps.get("cwd")
-    item["attempts"] += 1
+    # Freshly-parsed backlog items have no attempts/failures yet — initialize (§8).
+    item["attempts"] = item.get("attempts", 0) + 1
+    item["failures"] = item.get("failures") or []
 
     base_prompt = f"{BASE}\n\n{item['title']}\nPath: {item['path']}\nFix: {item.get('fix', '')}"
     if item["failures"]:
@@ -98,7 +100,7 @@ def run_item(item, *, deps, state, gate_cmd, allow=None, deny=None, max_attempts
         save_item(state, item)
         return item
 
-    guards = check_guards(diff, {"allow": allow or []})
+    guards = check_guards(diff, {"allow": allow or [], "deny": deny or []})
     cov = check_coverage(diff, gate["coverage"])
     if not guards["ok"] or not cov["ok"]:
         uncovered = [f"{u['file']}:{u['line']}" for u in cov["uncovered"]]
@@ -109,7 +111,19 @@ def run_item(item, *, deps, state, gate_cmd, allow=None, deny=None, max_attempts
     verdict = deps["verifier"](item, diff, guards["warnings"])
     if verdict["verdict"] == "APPROVE":
         deps["git"]["commit"](cwd, f"{item['id']}: {item['title']}")
-        mark_done(state, item, deps["git"]["head"](cwd))
+        sha = deps["git"]["head"](cwd)
+        # Provenance BEFORE the done marker (§6/§8): a done marker must imply audit-on-disk.
+        if deps.get("provenance"):
+            deps["provenance"]({
+                "item_id": item["id"], "title": item["title"], "commit_sha": sha,
+                "prompt_sent": prompt, "attempts": item["failures"],
+                "gate_output": gate["output"], "coverage_ok": cov["ok"],
+                "guard_results": {"violations": guards["violations"],
+                                  "warnings": guards["warnings"]},
+                "verifier_verdict": verdict["verdict"], "verifier_rationale": verdict["reasons"],
+                "final_diff": diff, "lessons_applied": [],
+            })
+        mark_done(state, item, sha)
     return item
 
 

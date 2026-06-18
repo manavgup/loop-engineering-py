@@ -85,7 +85,10 @@ def fixture_repo(tmp_path: Path) -> str:
     )
 
     # Gate artifact and grinder state must not pollute the diff.
-    (tmp_path / ".gitignore").write_text("coverage.xml\n.backlog-grinder/\n")
+    # Ignore the gate artifact, grinder state, AND Python bytecode — __pycache__/*.pyc
+    # would otherwise be staged into the diff and tripped as out-of-scope by the guards.
+    (tmp_path / ".gitignore").write_text(
+        "coverage.xml\n.coverage\n.backlog-grinder/\n__pycache__/\n*.pyc\n")
 
     (tmp_path / "BACKLOG.md").write_text(
         "### \U0001f534 CRITICAL (1)\n\n"

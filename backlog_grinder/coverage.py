@@ -32,7 +32,11 @@ def changed_lines(diff: str) -> dict[str, set[int]]:
         if hunk_match:
             line_no = int(hunk_match.group(1))
             continue
-        if line.startswith('+'):
+        # Before any file header (e.g. a deletion's '+++ /dev/null', which FILE_RE
+        # does not match) there is no current file — skip, never index result[None].
+        if current is None:
+            continue
+        if line.startswith('+') and not line.startswith('+++'):
             result[current].add(line_no)
             line_no += 1
         elif not line.startswith('-'):

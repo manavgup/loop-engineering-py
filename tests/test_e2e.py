@@ -78,6 +78,9 @@ def test_stub_implementer_fixes_file_driver_commits(tmp_path):
     )
     # Make src importable from the tmp_path root.
     (src_dir / "__init__.py").write_text("")
+    # Python writes __pycache__/*.pyc when the gate runs; a real repo ignores them
+    # so they never pollute the staged diff the scope guards inspect.
+    (tmp_path / ".gitignore").write_text("__pycache__/\n*.pyc\n")
 
     git(d, "add", "-A")
     git(d, "commit", "-q", "-m", "init")
@@ -170,6 +173,7 @@ def test_cheat_deletes_test_is_reverted_by_guards(tmp_path):
     tests_dir = tmp_path / "tests"
     tests_dir.mkdir(parents=True, exist_ok=True)
     (tests_dir / "test_x.py").write_text("def test_x():\n    assert False\n")
+    (tmp_path / ".gitignore").write_text("__pycache__/\n*.pyc\n")
 
     git(d, "add", "-A")
     git(d, "commit", "-q", "-m", "init")
@@ -253,6 +257,7 @@ def test_new_file_outside_allowlist_is_blocked(tmp_path):
     src_dir = tmp_path / "src"
     src_dir.mkdir(parents=True, exist_ok=True)
     (src_dir / "x.py").write_text("VALUE = 1\n")
+    (tmp_path / ".gitignore").write_text("__pycache__/\n*.pyc\n")
 
     git(d, "add", "-A")
     git(d, "commit", "-q", "-m", "init")

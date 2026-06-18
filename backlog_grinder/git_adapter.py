@@ -1,11 +1,14 @@
 """The §7 git safety adapter for backlog-grinder."""
 
 import subprocess
-from types import SimpleNamespace
 
 
 def make_git():
-    """Return an object with git callables: diff, commit, restore, head."""
+    """Return a dict of git callables: diff, commit, restore, head.
+
+    The driver consumes this as deps['git'] with dict access
+    (deps['git']['diff'](cwd)), matching the injected fakes in the test suite.
+    """
 
     def run(cwd, *args):
         result = subprocess.run(
@@ -32,4 +35,4 @@ def make_git():
     def head(cwd):
         return run(cwd, "rev-parse", "HEAD").strip()
 
-    return SimpleNamespace(diff=diff, commit=commit, restore=restore, head=head)
+    return {"diff": diff, "commit": commit, "restore": restore, "head": head}

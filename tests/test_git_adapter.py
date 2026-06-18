@@ -55,7 +55,7 @@ def test_diff_stages_untracked_and_tracked(tmp_path):
     (repo / "a.txt").write_text("2\n")    # modify tracked file
     (repo / "b.txt").write_text("new\n")  # add untracked file
 
-    d = g.diff(repo)
+    d = g["diff"](repo)
 
     assert "a.txt" in d
     assert "b.txt" in d
@@ -69,10 +69,10 @@ def test_commit_advances_head(tmp_path):
     repo = _make_repo(tmp_path)
     g = make_git()
 
-    before = g.head(repo)
+    before = g["head"](repo)
     (repo / "a.txt").write_text("2\n")
-    g.commit(repo, "change a")
-    after = g.head(repo)
+    g["commit"](repo, "change a")
+    after = g["head"](repo)
 
     assert before != after
     assert "change a" in _git(repo, "log", "--oneline")
@@ -90,7 +90,7 @@ def test_restore_resets_tracked_and_removes_untracked(tmp_path):
     (repo / "a.txt").write_text("CORRUPT\n")
     (repo / "junk.txt").write_text("leak\n")
 
-    g.restore(repo)
+    g["restore"](repo)
 
     # Tracked file must be back to its committed content
     assert _git(repo, "show", "HEAD:a.txt") == "1\n"
