@@ -8,9 +8,39 @@ Segment match so 'auth' flags backend/auth/x.py but not backend/oauth_helper.py.
 
 def summarize(items: list[dict]) -> dict:
     """Return totals (total, stale, queueable) and breakdowns by_severity / by_category."""
-    raise NotImplementedError
+    by_severity: dict = {}
+    by_category: dict = {}
+    stale = 0
+    for item in items:
+        severity = item["severity"]
+        by_severity[severity] = by_severity.get(severity, 0) + 1
+        category = item["category"]
+        by_category[category] = by_category.get(category, 0) + 1
+        if item["stale"]:
+            stale += 1
+    return {
+        "total": len(items),
+        "stale": stale,
+        "queueable": len(items) - stale,
+        "by_severity": by_severity,
+        "by_category": by_category,
+    }
 
 
 def to_state_markdown(items: list[dict], options: dict | None = None) -> str:
     """Render the full loop-state markdown document for the given items and options dict."""
-    raise NotImplementedError
+    options = options or {}
+    deny = options.get("deny", [])
+    lines = ["# Loop State — " + options.get("project_name", ""), "", "## Queue", ""]
+    stale_lines = []
+    for item in items:
+        label = item["id"] + " — " + item["title"]
+        if item["stale"]:
+            stale_lines.append("- " + label)
+            continue
+        if any(segment in item["path"].split("/") for segment in deny):
+            label += " [DENYLIST: human gate]"
+        lines.append("- [ ] " + label)
+    lines += ["", "## Stale / needs human re-validation", ""]
+    lines += stale_lines
+    return "\n".join(lines)
