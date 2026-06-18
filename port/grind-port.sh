@@ -74,7 +74,7 @@ EOF
   cat > "$config" <<EOF
 {
   "backlogPath": ".grind-tmp/$mod.backlog.md",
-  "gateCmd": "python3 -m pytest $tests --cov=backlog_grinder --cov-report=xml:coverage.xml --cov-fail-under=0 -q",
+  "gateCmd": "python3 -m pytest $tests --cov=backlog_grinder --cov-report=xml:coverage.xml --cov-fail-under=0 -q && python3 port/cov-fixup.py coverage.xml",
   "coverage": { "format": "cobertura", "file": "coverage.xml" },
   "implementerCmd": "$IMPL",
   "verifierCmd": "sh examples/verifier-pep8.sh",
