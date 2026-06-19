@@ -12,6 +12,7 @@ commit.  A configured command sees the diff via ``$BG_DIFF_FILE`` and guard
 warnings via ``$BG_WARNINGS``; exit 0 → APPROVE, non-zero → REJECT (its
 output becomes the rejection reason).
 """
+
 import os
 import shutil
 import subprocess
@@ -20,6 +21,7 @@ import tempfile
 
 def make_shell_implementer(command):
     """Return a callable(item, prompt) that runs *command* in a shell with item+prompt in env."""
+
     def run(item, prompt):
         env = dict(os.environ)
         env["BG_ITEM_ID"] = str(item.get("id", ""))
@@ -29,11 +31,13 @@ def make_shell_implementer(command):
         env["BG_PROMPT"] = str(prompt)
         proc = subprocess.run(command, shell=True, env=env)
         return {"ok": proc.returncode == 0}
+
     return run
 
 
 def make_shell_verifier(command=None):
     """Return a callable(item, diff, warnings) -> {verdict, reasons} that delegates to *command*."""
+
     def verify(item, diff, warnings):
         if command is None:
             reason = "No verifier command; hard checks (gate, coverage, guards) gate the commit."
@@ -51,4 +55,5 @@ def make_shell_verifier(command=None):
             return {"verdict": "APPROVE", "reasons": []}
         output = (proc.stdout + proc.stderr).strip()
         return {"verdict": "REJECT", "reasons": [output]}
+
     return verify

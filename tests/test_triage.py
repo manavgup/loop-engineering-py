@@ -2,28 +2,49 @@
 Tests for backlog_grinder.triage.
 All tests are synchronous plain-def; no async/await.
 """
+
 from backlog_grinder.triage import summarize, to_state_markdown
 
 ITEMS = [
     {
-        "id": "a1", "title": "X", "path": "backend/a.py:1",
-        "effort": "S", "severity": "critical", "category": "bug-fix",
-        "checked": False, "stale": False,
+        "id": "a1",
+        "title": "X",
+        "path": "backend/a.py:1",
+        "effort": "S",
+        "severity": "critical",
+        "category": "bug-fix",
+        "checked": False,
+        "stale": False,
     },
     {
-        "id": "b2", "title": "Y", "path": "backend/auth/b.py:2",
-        "effort": "M", "severity": "critical", "category": "security",
-        "checked": False, "stale": True,
+        "id": "b2",
+        "title": "Y",
+        "path": "backend/auth/b.py:2",
+        "effort": "M",
+        "severity": "critical",
+        "category": "security",
+        "checked": False,
+        "stale": True,
     },
     {
-        "id": "c3", "title": "Z", "path": "backend/c.py:3",
-        "effort": "L", "severity": "high", "category": "bug-fix",
-        "checked": False, "stale": False,
+        "id": "c3",
+        "title": "Z",
+        "path": "backend/c.py:3",
+        "effort": "L",
+        "severity": "high",
+        "category": "bug-fix",
+        "checked": False,
+        "stale": False,
     },
     {
-        "id": "e5", "title": "W", "path": "backend/auth/login.py:9",
-        "effort": "S", "severity": "high", "category": "security",
-        "checked": False, "stale": False,
+        "id": "e5",
+        "title": "W",
+        "path": "backend/auth/login.py:9",
+        "effort": "S",
+        "severity": "high",
+        "category": "security",
+        "checked": False,
+        "stale": False,
     },
 ]
 

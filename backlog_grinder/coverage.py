@@ -1,15 +1,16 @@
 """Coverage utilities: identify changed source lines and check execution coverage."""
+
 import re
 
 # Matches a unified-diff hunk header; group 1 = new-file start line, group 2 = length (optional).
-HUNK_RE = re.compile(r'^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@')
+HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 
 # Matches the "+++ b/<path>" line that names the new version of a file.
-FILE_RE = re.compile(r'^\+\+\+ b\/(.+)$')
+FILE_RE = re.compile(r"^\+\+\+ b\/(.+)$")
 
 # Non-behavioral file extensions: docs, config, lock files.
 # Changes to these files don't need test coverage.
-NON_BEHAVIORAL = re.compile(r'\.(md|txt|rst|json|ya?ml|toml|ini|cfg|lock)$', re.IGNORECASE)
+NON_BEHAVIORAL = re.compile(r"\.(md|txt|rst|json|ya?ml|toml|ini|cfg|lock)$", re.IGNORECASE)
 
 
 def is_behavioral(file: str) -> bool:
@@ -36,10 +37,10 @@ def changed_lines(diff: str) -> dict[str, set[int]]:
         # does not match) there is no current file — skip, never index result[None].
         if current is None:
             continue
-        if line.startswith('+') and not line.startswith('+++'):
+        if line.startswith("+") and not line.startswith("+++"):
             result[current].add(line_no)
             line_no += 1
-        elif not line.startswith('-'):
+        elif not line.startswith("-"):
             line_no += 1
     return result
 

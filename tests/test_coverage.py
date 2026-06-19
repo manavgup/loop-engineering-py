@@ -1,4 +1,5 @@
 """Tests for backlog_grinder.coverage."""
+
 from backlog_grinder.coverage import changed_lines, check_coverage, is_behavioral
 
 # Unified diff used across multiple tests.
@@ -33,6 +34,7 @@ def test_check_coverage_fails_when_changed_source_line_was_not_executed():
     r = check_coverage(DIFF, cov)
     assert r["ok"] is False
     import re
+
     assert re.search(r"x\.py", r["uncovered"][0]["file"])
 
 

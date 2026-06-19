@@ -52,11 +52,14 @@ def run_grind(config: dict) -> dict:
     stop_file = config.get("stop_file")
     budget_seconds = config.get("budget_seconds")
     state_path = config.get("state_path") or os.path.join(
-        repo_cwd, ".backlog-grinder", "state.json")
+        repo_cwd, ".backlog-grinder", "state.json"
+    )
     provenance_path = config.get("provenance_path") or os.path.join(
-        repo_cwd, ".backlog-grinder", "provenance.jsonl")
+        repo_cwd, ".backlog-grinder", "provenance.jsonl"
+    )
     state_markdown_path = config.get("state_markdown_path") or os.path.join(
-        repo_cwd, ".backlog-grinder", "STATE.md")
+        repo_cwd, ".backlog-grinder", "STATE.md"
+    )
 
     if not backlog_path:
         raise ValueError("config.backlog_path is required")
@@ -66,7 +69,8 @@ def run_grind(config: dict) -> dict:
         raise ValueError("config.implementer_cmd is required")
     if not coverage or not coverage.get("format") or not coverage.get("file"):
         raise ValueError(
-            "config.coverage {format,file} is required — the coverage backbone is mandatory")
+            "config.coverage {format,file} is required — the coverage backbone is mandatory"
+        )
 
     # 1. Parse the backlog and re-validate each item against the real tree (park stale).
     with open(os.path.join(repo_cwd, backlog_path), encoding="utf-8") as fh:
@@ -92,7 +96,8 @@ def run_grind(config: dict) -> dict:
         if result["passed"] and not result["infra_error"]:
             try:
                 result["coverage"] = load_coverage(
-                    format=coverage["format"], file=cov_file_abs, repo_cwd=repo_cwd)
+                    format=coverage["format"], file=cov_file_abs, repo_cwd=repo_cwd
+                )
             except Exception:
                 pass  # no coverage artifact -> key absent -> driver halts with a config error
         return result
@@ -116,8 +121,16 @@ def run_grind(config: dict) -> dict:
     cwd0 = os.getcwd()
     os.chdir(repo_cwd)
     try:
-        run_queue(items, deps=deps, state=state, gate_cmd=gate_cmd, allow=allow,
-                  deny=deny, max_attempts=max_attempts, stop_file=stop_file)
+        run_queue(
+            items,
+            deps=deps,
+            state=state,
+            gate_cmd=gate_cmd,
+            allow=allow,
+            deny=deny,
+            max_attempts=max_attempts,
+            stop_file=stop_file,
+        )
     finally:
         os.chdir(cwd0)
     deps["persist_state"](state)
@@ -128,8 +141,15 @@ def run_grind(config: dict) -> dict:
         return (rec and rec.get("status")) or it.get("status") or "pending"
 
     non_stale = [it for it in items if not it.get("stale")]
-    counts = {"total": len(items), "stale": len(items) - len(non_stale),
-              "done": 0, "abandoned": 0, "parked": 0, "blocked": 0, "pending": 0}
+    counts = {
+        "total": len(items),
+        "stale": len(items) - len(non_stale),
+        "done": 0,
+        "abandoned": 0,
+        "parked": 0,
+        "blocked": 0,
+        "pending": 0,
+    }
     for it in non_stale:
         s = status_of(it)
         if s == "done":
@@ -150,8 +170,13 @@ def run_grind(config: dict) -> dict:
     else:
         end_state = "drained"
 
-    return {"end_state": end_state, "counts": counts, "state_path": state_path,
-            "provenance_path": provenance_path, "state_markdown_path": state_markdown_path}
+    return {
+        "end_state": end_state,
+        "counts": counts,
+        "state_path": state_path,
+        "provenance_path": provenance_path,
+        "state_markdown_path": state_markdown_path,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +188,8 @@ def main(argv: list[str] | None = None) -> int:
     """Parse argv, load JSON config, run run_grind, print summary, return exit code."""
     parser = argparse.ArgumentParser(
         prog="backlog-grind",
-        description="Drain a finite backlog against a repo (model-agnostic, no LLM required).")
+        description="Drain a finite backlog against a repo (model-agnostic, no LLM required).",
+    )
     parser.add_argument("--config", help="JSON config file")
     parser.add_argument("--repo", help="target git repo (overrides config.repo_cwd)")
     parser.add_argument("--backlog", help="backlog file (overrides config.backlog_path)")

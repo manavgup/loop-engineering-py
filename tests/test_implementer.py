@@ -2,6 +2,7 @@
 Tests for backlog_grinder.implementer.
 All tests are synchronous plain-def; no async/await.
 """
+
 import os
 import tempfile
 
@@ -15,8 +16,15 @@ def test_shell_implementer_runs_command_and_writes_env():
         # Write $BG_ITEM_TITLE to a file — proves the env var was passed correctly.
         impl = make_shell_implementer(f'printf "fixed:$BG_ITEM_TITLE" > {out_file}')
         result = impl(
-            {"id": "i1", "title": "X", "path": "a", "fix": "do",
-             "status": "open", "attempts": 0, "failures": []},
+            {
+                "id": "i1",
+                "title": "X",
+                "path": "a",
+                "fix": "do",
+                "status": "open",
+                "attempts": 0,
+                "failures": [],
+            },
             "PROMPT",
         )
         assert result["ok"] is True
@@ -34,8 +42,15 @@ def test_shell_implementer_passes_all_env_vars():
         )
         impl = make_shell_implementer(cmd)
         impl(
-            {"id": "myid", "title": "T", "path": "src/foo.py", "fix": "rm it",
-             "status": "open", "attempts": 0, "failures": []},
+            {
+                "id": "myid",
+                "title": "T",
+                "path": "src/foo.py",
+                "fix": "rm it",
+                "status": "open",
+                "attempts": 0,
+                "failures": [],
+            },
             "DO IT",
         )
         with open(out_file) as fh:

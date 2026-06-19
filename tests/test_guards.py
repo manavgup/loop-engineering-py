@@ -84,6 +84,7 @@ def test_deleted_test_file_is_a_hard_violation():
     )
     # Combined text must match /deleted.*test/i
     import re
+
     assert re.search(r"deleted.*test", " ".join(r["violations"]), re.IGNORECASE)
 
 

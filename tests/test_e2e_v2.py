@@ -18,12 +18,7 @@ from backlog_grinder.state import mark_done
 # ---------------------------------------------------------------------------
 
 _DIFF = (
-    "diff --git a/src/x.py b/src/x.py\n"
-    "--- a/src/x.py\n"
-    "+++ b/src/x.py\n"
-    "@@ -10,1 +11,1 @@\n"
-    "-a\n"
-    "+b\n"
+    "diff --git a/src/x.py b/src/x.py\n--- a/src/x.py\n+++ b/src/x.py\n@@ -10,1 +11,1 @@\n-a\n+b\n"
 )
 
 
@@ -72,14 +67,16 @@ def item(o=None):
 
 def test_proof_1_coverage_rejects_untested_fix():
     """PROOF 1: a no-test fix is rejected by coverage (changed line not executed)."""
-    deps = base_deps({
-        "run_gate": lambda cmd, cwd: {
-            "passed": True,
-            "output": "ok",
-            "infra_error": False,
-            "coverage": {"src/x.py": {99}},  # line 11 NOT in executed set
-        },
-    })
+    deps = base_deps(
+        {
+            "run_gate": lambda cmd, cwd: {
+                "passed": True,
+                "output": "ok",
+                "infra_error": False,
+                "coverage": {"src/x.py": {99}},  # line 11 NOT in executed set
+            },
+        }
+    )
     r = run_item(
         item(),
         deps=deps,
@@ -99,13 +96,15 @@ def test_proof_1_coverage_rejects_untested_fix():
 
 def test_proof_2_repeat_failure_escalates_early():
     """PROOF 2: a signature-identical repeat escalates before reaching maxAttempts."""
-    deps = base_deps({
-        "run_gate": lambda cmd, cwd: {
-            "passed": False,
-            "output": "AssertionError: nope",
-            "infra_error": False,
-        },
-    })
+    deps = base_deps(
+        {
+            "run_gate": lambda cmd, cwd: {
+                "passed": False,
+                "output": "AssertionError: nope",
+                "infra_error": False,
+            },
+        }
+    )
     it = item()
     # maxAttempts=5 but 2nd identical failure must abandon early
     r = run_item(
@@ -146,16 +145,18 @@ def test_proof_3_budget_halts_mid_queue():
     def persist_fn(state):
         persisted[0] = True
 
-    deps = base_deps({
-        "budget": {"ok": lambda: committed[0] < 1},
-        "git": {
-            "diff": lambda cwd: _DIFF,
-            "commit": commit_fn,
-            "restore": lambda cwd: None,
-            "head": lambda cwd: "sha1",
-        },
-        "persist_state": persist_fn,
-    })
+    deps = base_deps(
+        {
+            "budget": {"ok": lambda: committed[0] < 1},
+            "git": {
+                "diff": lambda cwd: _DIFF,
+                "commit": commit_fn,
+                "restore": lambda cwd: None,
+                "head": lambda cwd: "sha1",
+            },
+            "persist_state": persist_fn,
+        }
+    )
 
     queue = [item({"id": "q1"}), item({"id": "q2"})]
     run_queue(
@@ -167,10 +168,10 @@ def test_proof_3_budget_halts_mid_queue():
         max_attempts=1,
     )
 
-    assert queue[0]["status"] == "done"     # first item completed (one commit)
+    assert queue[0]["status"] == "done"  # first item completed (one commit)
     assert queue[1]["status"] == "pending"  # budget halted before the second
-    assert queue[1]["attempts"] == 0        # q2 was never touched
-    assert persisted[0] is True             # checkpoint written
+    assert queue[1]["attempts"] == 0  # q2 was never touched
+    assert persisted[0] is True  # checkpoint written
 
 
 # ---------------------------------------------------------------------------
@@ -216,20 +217,22 @@ def test_proof_5_no_coverage_map_halts_and_restores():
     def restore_fn(cwd):
         restored[0] += 1
 
-    deps = base_deps({
-        "run_gate": lambda cmd, cwd: {
-            "passed": True,
-            "output": "ok",
-            "infra_error": False,
-            # no 'coverage' key → CONFIG error
-        },
-        "git": {
-            "diff": lambda cwd: _DIFF,
-            "commit": lambda cwd, msg: None,
-            "restore": restore_fn,
-            "head": lambda cwd: "sha1",
-        },
-    })
+    deps = base_deps(
+        {
+            "run_gate": lambda cmd, cwd: {
+                "passed": True,
+                "output": "ok",
+                "infra_error": False,
+                # no 'coverage' key → CONFIG error
+            },
+            "git": {
+                "diff": lambda cwd: _DIFF,
+                "commit": lambda cwd, msg: None,
+                "restore": restore_fn,
+                "head": lambda cwd: "sha1",
+            },
+        }
+    )
 
     r = run_item(
         item(),
@@ -270,10 +273,12 @@ def test_proof_6_coverage_feedback_fed_to_retry_and_commits():
             "coverage": {"src/x.py": executed},
         }
 
-    deps = base_deps({
-        "implementer": implementer,
-        "run_gate": run_gate,
-    })
+    deps = base_deps(
+        {
+            "implementer": implementer,
+            "run_gate": run_gate,
+        }
+    )
 
     it = item()
     r = run_item(
@@ -284,7 +289,7 @@ def test_proof_6_coverage_feedback_fed_to_retry_and_commits():
         allow=["src/x.py"],
         max_attempts=3,
     )
-    assert r["status"] == "pending"             # attempt 1 rejected by coverage
+    assert r["status"] == "pending"  # attempt 1 rejected by coverage
     assert r["failures"][0]["coverage_ok"] is False
 
     r = run_item(
@@ -295,5 +300,5 @@ def test_proof_6_coverage_feedback_fed_to_retry_and_commits():
         allow=["src/x.py"],
         max_attempts=3,
     )
-    assert saw_coverage_feedback[0] is True     # retry prompt named the uncovered lines
-    assert r["status"] == "done"                # the covering retry commits
+    assert saw_coverage_feedback[0] is True  # retry prompt named the uncovered lines
+    assert r["status"] == "done"  # the covering retry commits

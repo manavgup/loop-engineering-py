@@ -33,6 +33,7 @@ FIXTURE = """\
 # test: parseBacklog extracts full item fields from the real format
 # ---------------------------------------------------------------------------
 
+
 def test_parse_backlog_extracts_full_item_fields():
     items = parse_backlog(FIXTURE)
     assert len(items) == 2
@@ -55,6 +56,7 @@ def test_parse_backlog_extracts_full_item_fields():
 # ---------------------------------------------------------------------------
 # test: parsePathRef + isStale
 # ---------------------------------------------------------------------------
+
 
 def test_parse_path_ref_with_line_number():
     result = parse_path_ref("backend/openai.py:46")

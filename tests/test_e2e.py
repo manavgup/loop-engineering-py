@@ -47,8 +47,9 @@ from backlog_grinder.driver import run_item
 
 def git(cwd: str, *args: str) -> str:
     """Run a git command synchronously and return decoded stdout."""
-    return subprocess.check_output(["git", *args], cwd=cwd, encoding="utf-8",
-                                   stderr=subprocess.STDOUT)
+    return subprocess.check_output(
+        ["git", *args], cwd=cwd, encoding="utf-8", stderr=subprocess.STDOUT
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -106,8 +107,10 @@ def test_stub_implementer_fixes_file_driver_commits(tmp_path):
         # Green gate must carry a coverage map; the changed line (src/x.py:1) is covered.
         try:
             subprocess.check_call(
-                ["python3", "check.py"], cwd=cwd,
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                ["python3", "check.py"],
+                cwd=cwd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
             return {"passed": True, "output": "ok", "coverage": {"src/x.py": {1}}}
         except subprocess.CalledProcessError as exc:

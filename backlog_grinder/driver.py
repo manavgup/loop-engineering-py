@@ -43,8 +43,18 @@ def _run_gate_confirmed(deps, gate_cmd, cwd):
     return result
 
 
-def _fail(item, state, deps, cwd, max_attempts, *, gate_output, guard_violations,
-          coverage_ok, coverage_uncovered):
+def _fail(
+    item,
+    state,
+    deps,
+    cwd,
+    max_attempts,
+    *,
+    gate_output,
+    guard_violations,
+    coverage_ok,
+    coverage_uncovered,
+):
     """Record a rejection, restore the tree, and set status (abandon or stay pending)."""
     record = {
         "attempt": item["attempts"],
@@ -91,8 +101,17 @@ def run_item(item, *, deps, state, gate_cmd, allow=None, deny=None, max_attempts
     diff = deps["git"]["diff"](cwd)
 
     if not gate["passed"]:
-        return _fail(item, state, deps, cwd, max_attempts, gate_output=gate["output"],
-                     guard_violations=[], coverage_ok=False, coverage_uncovered=[])
+        return _fail(
+            item,
+            state,
+            deps,
+            cwd,
+            max_attempts,
+            gate_output=gate["output"],
+            guard_violations=[],
+            coverage_ok=False,
+            coverage_uncovered=[],
+        )
 
     if "coverage" not in gate:
         deps["git"]["restore"](cwd)
@@ -104,9 +123,17 @@ def run_item(item, *, deps, state, gate_cmd, allow=None, deny=None, max_attempts
     cov = check_coverage(diff, gate["coverage"])
     if not guards["ok"] or not cov["ok"]:
         uncovered = [f"{u['file']}:{u['line']}" for u in cov["uncovered"]]
-        return _fail(item, state, deps, cwd, max_attempts, gate_output=gate["output"],
-                     guard_violations=guards["violations"], coverage_ok=cov["ok"],
-                     coverage_uncovered=uncovered)
+        return _fail(
+            item,
+            state,
+            deps,
+            cwd,
+            max_attempts,
+            gate_output=gate["output"],
+            guard_violations=guards["violations"],
+            coverage_ok=cov["ok"],
+            coverage_uncovered=uncovered,
+        )
 
     verdict = deps["verifier"](item, diff, guards["warnings"])
     if verdict["verdict"] == "APPROVE":
@@ -114,21 +141,32 @@ def run_item(item, *, deps, state, gate_cmd, allow=None, deny=None, max_attempts
         sha = deps["git"]["head"](cwd)
         # Provenance BEFORE the done marker (§6/§8): a done marker must imply audit-on-disk.
         if deps.get("provenance"):
-            deps["provenance"]({
-                "item_id": item["id"], "title": item["title"], "commit_sha": sha,
-                "prompt_sent": prompt, "attempts": item["failures"],
-                "gate_output": gate["output"], "coverage_ok": cov["ok"],
-                "guard_results": {"violations": guards["violations"],
-                                  "warnings": guards["warnings"]},
-                "verifier_verdict": verdict["verdict"], "verifier_rationale": verdict["reasons"],
-                "final_diff": diff, "lessons_applied": [],
-            })
+            deps["provenance"](
+                {
+                    "item_id": item["id"],
+                    "title": item["title"],
+                    "commit_sha": sha,
+                    "prompt_sent": prompt,
+                    "attempts": item["failures"],
+                    "gate_output": gate["output"],
+                    "coverage_ok": cov["ok"],
+                    "guard_results": {
+                        "violations": guards["violations"],
+                        "warnings": guards["warnings"],
+                    },
+                    "verifier_verdict": verdict["verdict"],
+                    "verifier_rationale": verdict["reasons"],
+                    "final_diff": diff,
+                    "lessons_applied": [],
+                }
+            )
         mark_done(state, item, sha)
     return item
 
 
-def run_queue(queue, *, deps, state=None, gate_cmd, allow=None, deny=None,
-              max_attempts=3, stop_file=None):
+def run_queue(
+    queue, *, deps, state=None, gate_cmd, allow=None, deny=None, max_attempts=3, stop_file=None
+):
     """Iterate pending items in queue, calling run_item on each until terminal or halted.
 
     Checkpoints state after every item. Halts early when the budget is exhausted.
@@ -139,8 +177,15 @@ def run_queue(queue, *, deps, state=None, gate_cmd, allow=None, deny=None,
     for item in pending_items(queue, state):
         if budget and not budget["ok"]():
             break
-        run_item(item, deps=deps, state=state, gate_cmd=gate_cmd, allow=allow,
-                 deny=deny, max_attempts=max_attempts)
+        run_item(
+            item,
+            deps=deps,
+            state=state,
+            gate_cmd=gate_cmd,
+            allow=allow,
+            deny=deny,
+            max_attempts=max_attempts,
+        )
         if persist:
             persist(state)
     return queue

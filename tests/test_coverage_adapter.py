@@ -1,4 +1,5 @@
 """Tests for backlog_grinder.coverage_adapter."""
+
 import os
 import tempfile
 

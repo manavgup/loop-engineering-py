@@ -35,16 +35,14 @@ from backlog_grinder.cli import run_grind
 # Helpers
 # ---------------------------------------------------------------------------
 
-GATE = (
-    "python3 -m pytest test_x.py "
-    "--cov=src --cov-report=xml:coverage.xml --cov-fail-under=0 -q"
-)
+GATE = "python3 -m pytest test_x.py --cov=src --cov-report=xml:coverage.xml --cov-fail-under=0 -q"
 
 
 def git(cwd: str, *args: str) -> str:
     """Run a git command synchronously and return decoded stdout."""
-    return subprocess.check_output(["git", *args], cwd=cwd, encoding="utf-8",
-                                   stderr=subprocess.STDOUT)
+    return subprocess.check_output(
+        ["git", *args], cwd=cwd, encoding="utf-8", stderr=subprocess.STDOUT
+    )
 
 
 def fixture_repo(tmp_path: Path) -> str:
@@ -69,24 +67,19 @@ def fixture_repo(tmp_path: Path) -> str:
 
     # Broken source: returns 1, test expects 2.
     (src_dir / "__init__.py").write_text("")
-    (src_dir / "x.py").write_text(
-        "def compute():\n"
-        "    return 1\n"
-    )
+    (src_dir / "x.py").write_text("def compute():\n    return 1\n")
 
     # The pytest test that covers the changed line.
     (tmp_path / "test_x.py").write_text(
-        "from src.x import compute\n"
-        "\n"
-        "def test_compute_is_2():\n"
-        "    assert compute() == 2\n"
+        "from src.x import compute\n\ndef test_compute_is_2():\n    assert compute() == 2\n"
     )
 
     # Gate artifact and grinder state must not pollute the diff.
     # Ignore the gate artifact, grinder state, AND Python bytecode — __pycache__/*.pyc
     # would otherwise be staged into the diff and tripped as out-of-scope by the guards.
     (tmp_path / ".gitignore").write_text(
-        "coverage.xml\n.coverage\n.backlog-grinder/\n__pycache__/\n*.pyc\n")
+        "coverage.xml\n.coverage\n.backlog-grinder/\n__pycache__/\n*.pyc\n"
+    )
 
     (tmp_path / "BACKLOG.md").write_text(
         "### \U0001f534 CRITICAL (1)\n\n"
@@ -121,9 +114,7 @@ def test_run_grind_fixes_real_repo_and_records_provenance(tmp_path):
             "gate_cmd": GATE,
             "coverage": {"format": "cobertura", "file": "coverage.xml"},
             # Model-agnostic implementer: a one-liner that performs the fix.
-            "implementer_cmd": (
-                "printf 'def compute():\\n    return 2\\n' > src/x.py"
-            ),
+            "implementer_cmd": ("printf 'def compute():\\n    return 2\\n' > src/x.py"),
             "allow": ["src/x.py"],
             "deny": [],
             "max_attempts": 2,
@@ -154,10 +145,7 @@ def test_run_grind_fixes_real_repo_and_records_provenance(tmp_path):
 
     # Provenance: one record, coverage passed, ties to the commit.
     prov_lines = (
-        (tmp_path / ".backlog-grinder" / "provenance.jsonl")
-        .read_text()
-        .strip()
-        .split("\n")
+        (tmp_path / ".backlog-grinder" / "provenance.jsonl").read_text().strip().split("\n")
     )
     assert len(prov_lines) == 1
     rec = json.loads(prov_lines[0])
@@ -182,11 +170,9 @@ def test_green_gate_with_no_coverage_artifact_halts(tmp_path):
         {
             "backlog_path": "BACKLOG.md",
             "repo_cwd": d,
-            "gate_cmd": "true",                           # vacuously green, no coverage written
+            "gate_cmd": "true",  # vacuously green, no coverage written
             "coverage": {"format": "cobertura", "file": "coverage.xml"},  # file never produced
-            "implementer_cmd": (
-                "printf 'def compute():\\n    return 2\\n' > src/x.py"
-            ),
+            "implementer_cmd": ("printf 'def compute():\\n    return 2\\n' > src/x.py"),
             "allow": ["src/x.py"],
             "max_attempts": 1,
         }

@@ -1,4 +1,5 @@
 """Tests for backlog_grinder.gate — synchronous."""
+
 import os
 import tempfile
 

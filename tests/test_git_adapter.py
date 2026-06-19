@@ -9,6 +9,7 @@ from backlog_grinder.git_adapter import make_git
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _git(cwd, *args):
     """Run git with the given args in cwd; return stdout as str (strips nothing)."""
     result = subprocess.run(
@@ -43,6 +44,7 @@ def _make_repo(tmp_path: Path) -> Path:
 # Tests
 # ---------------------------------------------------------------------------
 
+
 def test_diff_stages_untracked_and_tracked(tmp_path):
     """
     diff() stages everything (incl. untracked) then diffs the index against HEAD,
@@ -51,7 +53,7 @@ def test_diff_stages_untracked_and_tracked(tmp_path):
     repo = _make_repo(tmp_path)
     g = make_git()
 
-    (repo / "a.txt").write_text("2\n")    # modify tracked file
+    (repo / "a.txt").write_text("2\n")  # modify tracked file
     (repo / "b.txt").write_text("new\n")  # add untracked file
 
     d = g["diff"](repo)

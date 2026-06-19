@@ -11,6 +11,7 @@ def parse_backlog(markdown: str) -> list:
     """Parse a markdown backlog into a list of item dicts."""
     import hashlib
     import re
+
     items = []
     severity = ""
     category = ""

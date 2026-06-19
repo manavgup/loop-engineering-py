@@ -1,4 +1,5 @@
 """Adapters for reading LCOV and Cobertura XML coverage reports into a common dict shape."""
+
 import os
 import xml.etree.ElementTree as ET
 

@@ -4,6 +4,7 @@
 "why did the system make this edit and what did it check" is answerable from
 disk without re-running anything.
 """
+
 from backlog_grinder.provenance import append_record, make_record
 
 ITEM = {"id": "a1", "title": "Fix X", "path": "backend/x.py:46"}
