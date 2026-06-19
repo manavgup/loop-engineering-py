@@ -63,6 +63,32 @@ def test_parse_path_ref_with_line_number():
     assert result == {"file": "backend/openai.py", "line": 46}
 
 
+def test_parse_path_ref_handles_compound_and_annotated_paths_without_raising():
+    # Real backlogs use compound/annotated refs — take the FIRST file, never raise.
+    assert parse_path_ref("backend/openai.py:46 and anthropic.py:44,138") == {
+        "file": "backend/openai.py",
+        "line": 46,
+    }
+    assert parse_path_ref("vectordbs/store.py:60 (connect) vs :105, :201") == {
+        "file": "vectordbs/store.py",
+        "line": 60,
+    }
+    assert parse_path_ref("backend/cli/auth.py:159-162") == {
+        "file": "backend/cli/auth.py",
+        "line": 159,
+    }
+    # Bare path (no :line) must not raise — line is None.
+    assert parse_path_ref("Makefile") == {"file": "Makefile", "line": None}
+
+
+def test_is_stale_uses_first_file_of_a_compound_path():
+    # The first file exists → not stale, even though the raw field names two files.
+    item = {"path": "backend/openai.py:46 and anthropic.py:44,138"}
+    assert is_stale(item, lambda f: f == "backend/openai.py") is False
+    # A bare colon-less path must not crash is_stale.
+    assert is_stale({"path": "Makefile"}, lambda f: False) is True
+
+
 def test_is_stale_returns_false_when_file_exists():
     assert is_stale({"path": "backend/openai.py:46"}, lambda f: True) is False
 
