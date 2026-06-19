@@ -11,12 +11,16 @@ Model-agnostic: the implementer is a configured shell command, so any tool
 
 Public API
 ----------
+triage(config: dict) -> dict
+    L1 (read-only): parse + re-validate against the tree + write STATE.md.
+    Returns counts incl. stale_rate. No implementer/gate/commit loop.
+
 run_grind(config: dict) -> dict
     Orchestrate a full grind run.  Returns
     {end_state, counts, state_path, provenance_path, state_markdown_path}.
 
 main(argv=None) -> int
-    CLI entry point (argparse: --config, --repo, --backlog flag overrides).
+    CLI entry point (argparse: --config, --repo, --backlog, --triage-only).
     Returns 0 on complete|drained, 2 on halted or bad usage.
 """
 
@@ -34,7 +38,59 @@ from .git_adapter import make_git
 from .implementer import make_shell_implementer, make_shell_verifier
 from .parse import is_stale, parse_backlog
 from .persist import load_state, make_provenance_writer, make_state_persister
-from .triage import to_state_markdown
+from .triage import summarize, to_state_markdown
+
+# ---------------------------------------------------------------------------
+# Triage (L1 — read-only)
+# ---------------------------------------------------------------------------
+
+
+def triage(config: dict) -> dict:
+    """Parse the backlog, re-validate against the tree, and write the triage view.
+
+    This is the read-only L1 step: it parses items, marks each stale/fresh by
+    checking whether its referenced file still exists, writes ``STATE.md``, and
+    returns a summary. It runs no implementer, gate, or commit loop, and needs
+    only ``backlog_path`` (plus optional ``repo_cwd`` / ``deny`` /
+    ``project_name`` / ``state_markdown_path``) — none of the fixing config.
+
+    Args:
+        config: Configuration dict; ``backlog_path`` is required.
+
+    Returns:
+        A dict with ``total``, ``stale``, ``queueable``, ``by_severity``,
+        ``by_category``, ``stale_rate`` (``stale / total``, ``0.0`` when empty),
+        ``items`` (parsed item dicts, each carrying a ``stale`` flag), and
+        ``state_markdown_path``.
+
+    Raises:
+        ValueError: If ``backlog_path`` is missing.
+    """
+    backlog_path = config.get("backlog_path")
+    if not backlog_path:
+        raise ValueError("config.backlog_path is required")
+    repo_cwd = os.path.abspath(config.get("repo_cwd") or os.getcwd())
+    project_name = config.get("project_name", "Backlog Grinder")
+    deny = config.get("deny", [])
+    state_markdown_path = config.get("state_markdown_path") or os.path.join(
+        repo_cwd, ".backlog-grinder", "STATE.md"
+    )
+
+    with open(os.path.join(repo_cwd, backlog_path), encoding="utf-8") as fh:
+        items = parse_backlog(fh.read())
+    for it in items:
+        it["stale"] = is_stale(it, lambda f: os.path.exists(os.path.join(repo_cwd, f)))
+
+    os.makedirs(os.path.dirname(state_markdown_path), exist_ok=True)
+    with open(state_markdown_path, "w", encoding="utf-8") as fh:
+        fh.write(to_state_markdown(items, {"project_name": project_name, "deny": deny}))
+
+    summary = summarize(items)
+    summary["stale_rate"] = (summary["stale"] / summary["total"]) if summary["total"] else 0.0
+    summary["items"] = items
+    summary["state_markdown_path"] = state_markdown_path
+    return summary
+
 
 # ---------------------------------------------------------------------------
 # Orchestrator
@@ -96,7 +152,6 @@ def run_grind(config: dict) -> dict:
     allow = config.get("allow", [])
     deny = config.get("deny", [])
     max_attempts = config.get("max_attempts", 3)
-    project_name = config.get("project_name", "Backlog Grinder")
     stop_file = config.get("stop_file")
     budget_seconds = config.get("budget_seconds")
     state_path = config.get("state_path") or os.path.join(
@@ -120,16 +175,8 @@ def run_grind(config: dict) -> dict:
             "config.coverage {format,file} is required — the coverage backbone is mandatory"
         )
 
-    # 1. Parse the backlog and re-validate each item against the real tree (park stale).
-    with open(os.path.join(repo_cwd, backlog_path), encoding="utf-8") as fh:
-        items = parse_backlog(fh.read())
-    for it in items:
-        it["stale"] = is_stale(it, lambda f: os.path.exists(os.path.join(repo_cwd, f)))
-
-    # 2. Write the triage view (queue + stale + denylist flags) to disk.
-    os.makedirs(os.path.dirname(state_markdown_path), exist_ok=True)
-    with open(state_markdown_path, "w", encoding="utf-8") as fh:
-        fh.write(to_state_markdown(items, {"project_name": project_name, "deny": deny}))
+    # 1-2. Parse, re-validate against the tree (park stale), and write the triage view.
+    items = triage(config)["items"]
 
     # 3. Resume: load prior STATE (done items skipped, failures restored by the driver).
     state = load_state(state_path)
@@ -251,6 +298,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--config", help="JSON config file")
     parser.add_argument("--repo", help="target git repo (overrides config.repo_cwd)")
     parser.add_argument("--backlog", help="backlog file (overrides config.backlog_path)")
+    parser.add_argument(
+        "--triage-only",
+        action="store_true",
+        help="L1 only: parse + re-validate + write STATE.md, then stop (no fixing)",
+    )
     args = parser.parse_args(argv)
 
     if not args.config and not args.backlog:
@@ -265,6 +317,15 @@ def main(argv: list[str] | None = None) -> int:
         config["repo_cwd"] = args.repo
     if args.backlog:
         config["backlog_path"] = args.backlog
+
+    if args.triage_only:
+        summary = triage(config)
+        print(f"\ntotal:     {summary['total']}")
+        print(f"queueable: {summary['queueable']}")
+        print(f"stale:     {summary['stale']}  ({summary['stale_rate']:.1%})")
+        print(f"by severity: {json.dumps(summary['by_severity'])}")
+        print(f"triage:    {summary['state_markdown_path']}")
+        return 0
 
     summary = run_grind(config)
     print(f"\nend state: {summary['end_state']}")

@@ -64,24 +64,39 @@ def parse_backlog(markdown: str) -> list:
 
 
 def parse_path_ref(path_field: str) -> dict:
-    """Split a ``file:line`` path field into a dict with ``file`` and ``line`` keys.
+    """Split a path reference into a dict with ``file`` and ``line`` keys.
+
+    Real-world backlog paths are often compound or annotated, e.g.
+    ``"a.py:46 and b.py:44,138"`` or ``"store.py:60 (connect) vs :105"``. Only
+    the FIRST file reference is used — everything after the first ``" and "``,
+    ``" vs "``, or ``","`` separator is ignored. A line range keeps the start
+    line; a bare path with no ``:line`` yields ``line = None``. Never raises.
 
     Args:
-        path_field: A string of the form ``"src/foo.py:12"`` or
-            ``"src/foo.py:12-34"`` (range — only the start line is kept).
+        path_field: A path reference string, possibly compound/annotated.
 
     Returns:
-        A dict ``{"file": str, "line": int}`` where ``line`` is the integer
-        start of the referenced line range.
+        A dict ``{"file": str, "line": int | None}`` for the first reference.
 
     Examples:
         >>> parse_path_ref("backend/openai.py:46")
         {'file': 'backend/openai.py', 'line': 46}
         >>> parse_path_ref("src/foo.py:12-34")
         {'file': 'src/foo.py', 'line': 12}
+        >>> parse_path_ref("a.py:46 and b.py:44,138")
+        {'file': 'a.py', 'line': 46}
+        >>> parse_path_ref("store.py:60 (connect) vs :105")
+        {'file': 'store.py', 'line': 60}
+        >>> parse_path_ref("Makefile")
+        {'file': 'Makefile', 'line': None}
     """
-    file_part, _, line_part = path_field.rpartition(":")
-    return {"file": file_part, "line": int(line_part.split("-")[0])}
+    import re
+
+    first = re.split(r"\s+and\s+|\s+vs\s+|,", path_field.strip())[0].strip()
+    m = re.match(r"^(.+?):(\d+)", first)
+    if m:
+        return {"file": m.group(1), "line": int(m.group(2))}
+    return {"file": first.split(":")[0].strip(), "line": None}
 
 
 def is_stale(item: dict, file_exists) -> bool:
