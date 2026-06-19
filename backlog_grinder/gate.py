@@ -1,4 +1,16 @@
-"""Gate module: run a shell command and evaluate pass/fail with flake detection."""
+# SPDX-License-Identifier: MIT
+"""Run a shell command and evaluate pass/fail with flake detection.
+
+Location: backlog_grinder/gate.py
+Authors: Manav Gupta
+
+Provides two entry points for running an arbitrary shell command as a gate:
+
+``run_gate`` — single execution, returns pass/fail plus combined output.
+``run_gate_checked`` — adds flake-detection per §3.4: a red first run is
+    re-run once; two agreeing reds are a trusted failure; red-then-green is
+    flagged as flaky.
+"""
 
 import os
 import subprocess
@@ -17,14 +29,22 @@ def _gate_env():
 
 
 def run_gate(command, cwd, *, timeout_ms=600_000):
-    """Run *command* in a subprocess and return a result dict.
+    """Run a shell command in a subprocess and return a result dict.
+
+    Args:
+        command: Shell command string passed to ``subprocess.run`` with
+            ``shell=True``.
+        cwd: Working directory in which to execute the command.
+        timeout_ms: Timeout in milliseconds before the subprocess is killed.
+            Defaults to 600 000 ms (10 minutes).
 
     Returns:
-        dict with keys:
-            passed (bool): True iff the command exited with code 0.
-            output (str): Combined stdout+stderr, stripped.
-            infra_error (bool): True when the command could not run at all
-                (FileNotFoundError, exit 127, timeout, or non-numeric exit code).
+        A dict with keys:
+            ``passed`` (bool): True iff the command exited with code 0.
+            ``output`` (str): Combined stdout and stderr, stripped of
+                leading/trailing whitespace.
+            ``infra_error`` (bool): True when the command could not run at all
+                (exit code 127, meaning the executable was not found).
     """
     proc = subprocess.run(
         command,
@@ -43,15 +63,23 @@ def run_gate(command, cwd, *, timeout_ms=600_000):
 
 
 def run_gate_checked(command, cwd, **opts):
-    """Run *command* with flake-detection re-run logic (§3.4).
+    """Run a shell command with flake-detection re-run logic (§3.4).
 
     A green first run is trusted immediately.  A red first run is re-run once:
-    two agreeing reds → trusted red; red-then-green → flaky.  Infra errors are
-    passed through without a re-run and are never marked flaky.
+    two agreeing reds are a trusted failure; red-then-green is flagged as
+    flaky.  Infrastructure errors are passed through without a re-run and are
+    never marked flaky.
+
+    Args:
+        command: Shell command string passed to ``run_gate``.
+        cwd: Working directory in which to execute the command.
+        **opts: Additional keyword arguments forwarded to ``run_gate``
+            (e.g. ``timeout_ms``).
 
     Returns:
-        Same dict as run_gate plus:
-            flaky (bool): True iff first and second runs disagreed (red→green).
+        The same dict as ``run_gate`` plus:
+            ``flaky`` (bool): True iff the first and second runs disagreed
+                (red on the first run, green on the second).
     """
     first = run_gate(command, cwd, **opts)
     if first["passed"] or first["infra_error"]:

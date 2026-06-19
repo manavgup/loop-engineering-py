@@ -1,9 +1,15 @@
-"""Guards: diff inspection to block forbidden changes before commit.
+# SPDX-License-Identifier: MIT
+"""Diff inspection to block forbidden changes before commit.
 
-Public API
-----------
-parse_diff(diff_text)          -> list[dict]
-check_guards(diff, options)    -> dict
+Location: backlog_grinder/guards.py
+Authors: Manav Gupta
+
+Parses a unified diff and enforces two safety rules:
+  1. Test files may not be deleted.
+  2. When an allowlist is active, every touched file must match at least one entry.
+
+Assertion-count drops are surfaced as warnings (advisory, not blocking) because
+they may represent a legitimate refactor and the count is gameable.
 """
 
 import re
@@ -34,8 +40,15 @@ def _path_matches(path, pattern):
 def parse_diff(diff_text):
     """Parse a unified diff string into a list of per-file metadata dicts.
 
-    Each dict has keys: file (str), deleted (bool), added_assert (int),
-    removed_assert (int).
+    Args:
+        diff_text: Raw unified diff text (output of ``git diff``).
+
+    Returns:
+        A list of dicts, one per touched file, each containing:
+            ``file`` (str): the new-side file path;
+            ``deleted`` (bool): True if the file was deleted;
+            ``added_assert`` (int): count of added lines containing ``assert``;
+            ``removed_assert`` (int): count of removed lines containing ``assert``.
     """
     files = []
     current = None
@@ -61,22 +74,19 @@ def parse_diff(diff_text):
 def check_guards(diff, options=None):
     """Inspect a unified diff against an allowlist and test-safety rules.
 
-    Parameters
-    ----------
-    diff : str
-        Raw unified diff text (output of ``git diff``).
-    options : dict, optional
-        Key ``allow`` (list[str]): if non-empty, every touched file must match
-        at least one entry; otherwise it is a hard violation.
+    Args:
+        diff: Raw unified diff text (output of ``git diff``).
+        options: Optional dict of guard settings.  Recognised key:
+            ``allow`` (list[str]) — if non-empty, every touched file must match
+            at least one entry; otherwise it is a hard violation.
 
-    Returns
-    -------
-    dict with keys:
-        ok         (bool)    : True iff violations is empty.
-        violations (list[str]): Hard violations that block the commit.
-        warnings   (list[str]): Advisory issues surfaced to the verifier but
-                                not auto-blocking (e.g. assertion-count drop,
-                                which is gameable and may be a legit refactor).
+    Returns:
+        A dict with keys:
+            ``ok`` (bool): True iff ``violations`` is empty.
+            ``violations`` (list[str]): Hard violations that block the commit.
+            ``warnings`` (list[str]): Advisory issues surfaced to the verifier
+                but not auto-blocking (e.g. assertion-count drops, which are
+                gameable and may represent a legitimate refactor).
     """
     options = options or {}
     allow = options.get("allow", [])

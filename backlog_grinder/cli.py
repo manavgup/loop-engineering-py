@@ -1,4 +1,8 @@
-"""CLI / orchestrator for backlog-grinder.
+# SPDX-License-Identifier: MIT
+"""CLI and orchestrator for backlog-grinder.
+
+Location: backlog_grinder/cli.py
+Authors: Manav Gupta
 
 Wires the pure modules to real adapters (git, coverage, shell implementer/
 verifier, disk persistence) and drains a finite backlog against a real repo.
@@ -38,7 +42,51 @@ from .triage import to_state_markdown
 
 
 def run_grind(config: dict) -> dict:
-    """Orchestrate a full grind run against a real repo with real adapters."""
+    """Orchestrate a full grind run against a real repo with real adapters.
+
+    Parses the backlog, writes a triage markdown view, resumes from any prior
+    state, constructs the full adapter ``deps`` dict, drains the queue via
+    ``run_queue``, and returns a summary of the run.
+
+    Args:
+        config: Configuration dict with the following keys:
+            ``backlog_path`` (str, required) — path to the backlog markdown file,
+                relative to ``repo_cwd``.
+            ``gate_cmd`` (str or list, required) — shell command to run the test suite.
+            ``implementer_cmd`` (str, required) — shell command that edits the tree.
+            ``coverage`` (dict, required) — must contain ``format`` (str) and
+                ``file`` (str, path relative to ``repo_cwd``); mandatory backbone.
+            ``repo_cwd`` (str, optional) — target repository root; defaults to cwd.
+            ``verifier_cmd`` (str, optional) — shell command that verifies a diff.
+            ``allow`` (list[str], optional) — path prefixes the diff may touch.
+            ``deny`` (list[str], optional) — path prefixes that must not be touched.
+            ``max_attempts`` (int, optional) — per-item attempt cap; default 3.
+            ``project_name`` (str, optional) — label used in the triage markdown.
+            ``stop_file`` (str, optional) — path to a sentinel file that halts the run.
+            ``budget_seconds`` (float, optional) — wall-clock time budget; omit for
+                unlimited.
+            ``state_path`` (str, optional) — override for the state JSON path.
+            ``provenance_path`` (str, optional) — override for the provenance JSONL
+                path.
+            ``state_markdown_path`` (str, optional) — override for the triage markdown
+                path.
+
+    Returns:
+        A dict with keys:
+            ``end_state`` (str): ``"complete"`` (all non-stale items done),
+                ``"drained"`` (no pending items remain but not all done), or
+                ``"halted"`` (items still pending or blocked when budget ran out).
+            ``counts`` (dict): tallies keyed by status
+                (``total``, ``stale``, ``done``, ``abandoned``, ``parked``,
+                ``blocked``, ``pending``).
+            ``state_path`` (str): absolute path to the written state JSON.
+            ``provenance_path`` (str): absolute path to the provenance JSONL.
+            ``state_markdown_path`` (str): absolute path to the triage markdown.
+
+    Raises:
+        ValueError: If ``backlog_path``, ``gate_cmd``, ``implementer_cmd``, or
+            ``coverage`` config are missing or incomplete.
+    """
     backlog_path = config.get("backlog_path")
     repo_cwd = os.path.abspath(config.get("repo_cwd") or os.getcwd())
     gate_cmd = config.get("gate_cmd")
@@ -92,6 +140,7 @@ def run_grind(config: dict) -> dict:
     cov_file_abs = os.path.join(repo_cwd, coverage["file"])
 
     def run_gate_with_coverage(cmd, cwd):
+        """Run the gate and attach a coverage map when the suite is green."""
         result = run_gate(cmd, cwd)
         if result["passed"] and not result["infra_error"]:
             try:
@@ -137,6 +186,7 @@ def run_grind(config: dict) -> dict:
 
     # 6. Honest end states. STATE is authoritative for status.
     def status_of(it):
+        """Return the authoritative status of an item from state, falling back to item."""
         rec = state["items"].get(it["id"])
         return (rec and rec.get("status")) or it.get("status") or "pending"
 
@@ -185,7 +235,15 @@ def run_grind(config: dict) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Parse argv, load JSON config, run run_grind, print summary, return exit code."""
+    """Parse argv, load JSON config, run ``run_grind``, print a summary, and return an exit code.
+
+    Args:
+        argv: Argument list to parse; defaults to ``sys.argv[1:]`` when ``None``.
+
+    Returns:
+        ``0`` on ``complete`` or ``drained``; ``2`` on ``halted`` or when called
+        without ``--config`` or ``--backlog``.
+    """
     parser = argparse.ArgumentParser(
         prog="backlog-grind",
         description="Drain a finite backlog against a repo (model-agnostic, no LLM required).",
