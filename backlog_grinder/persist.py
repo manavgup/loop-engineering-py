@@ -1,11 +1,14 @@
-"""STATE and provenance persistence helpers (§8 / §6).
+# SPDX-License-Identifier: MIT
+"""State and provenance persistence helpers (§8 / §6).
 
-state.py keeps the in-memory shape {"items": {}, "last_good_sha": ...};
-these functions read/write it as JSON so a halt/crash can resume.
-Provenance is append-only JSONL so the audit trail is on disk and never lost.
+Location: backlog_grinder/persist.py
+Authors: Manav Gupta
 
-All callables are plain synchronous
-functions (fs.readFileSync / writeFileSync / appendFileSync → open() / pathlib).
+State is kept in memory as ``{"items": {}, "last_good_sha": ...}``; these
+functions read and write it as JSON so a halt or crash can resume cleanly.
+Provenance is written as append-only JSONL so the audit trail is durable and
+never lost.  All callables are plain synchronous functions built on
+``pathlib.Path`` I/O.
 """
 
 from __future__ import annotations
@@ -16,7 +19,15 @@ from typing import Callable
 
 
 def load_state(path: pathlib.Path | str) -> dict:
-    """Load persisted state from *path*; return ``{"items": {}}`` if missing or unreadable."""
+    """Load persisted state from *path*, returning a default dict if absent.
+
+    Args:
+        path: Filesystem path to the JSON state file.
+
+    Returns:
+        The parsed state dict, or ``{"items": {}}`` if *path* does not exist
+        or cannot be read.
+    """
     path = pathlib.Path(path)
     if not path.exists():
         return {"items": {}}
@@ -24,7 +35,17 @@ def load_state(path: pathlib.Path | str) -> dict:
 
 
 def make_state_persister(path: pathlib.Path | str) -> Callable[[dict], None]:
-    """Return a callable that writes *state* as pretty-printed JSON to *path*."""
+    """Return a callable that writes state as pretty-printed JSON to *path*.
+
+    Parent directories are created automatically if they do not exist.
+
+    Args:
+        path: Filesystem path where the JSON state file should be written.
+
+    Returns:
+        A callable ``(state: dict) -> None`` that serialises *state* with a
+        two-space indent and writes it atomically to *path*.
+    """
     path = pathlib.Path(path)
 
     def save(state: dict) -> None:
@@ -35,7 +56,19 @@ def make_state_persister(path: pathlib.Path | str) -> Callable[[dict], None]:
 
 
 def make_provenance_writer(path: pathlib.Path | str) -> Callable[[dict], None]:
-    """Return a callable that appends *record* as a single JSON line (JSONL) to *path*."""
+    """Return a callable that appends a record as a single JSON line to *path*.
+
+    Parent directories are created automatically if they do not exist.  Each
+    call appends exactly one newline-terminated JSON object, maintaining a valid
+    JSONL file.
+
+    Args:
+        path: Filesystem path to the JSONL provenance file.
+
+    Returns:
+        A callable ``(record: dict) -> None`` that serialises *record* and
+        appends it to *path*.
+    """
     path = pathlib.Path(path)
 
     def write(record: dict) -> None:

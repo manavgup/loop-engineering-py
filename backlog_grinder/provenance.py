@@ -1,9 +1,15 @@
-"""Provenance (§6): every approved commit emits a machine-generated audit record
-so "why did the system make this edit and what did it check" is answerable from
-disk without re-running anything.
+# SPDX-License-Identifier: MIT
+"""Provenance (§6): audit record construction and append-only storage.
 
-make_record builds the §6 record from the item + the run artifacts.
-append_record stores it append-only (one record per commit).
+Location: backlog_grinder/provenance.py
+Authors: Manav Gupta
+
+Every approved commit emits a machine-generated audit record so "why did the
+system make this edit and what did it check" is answerable from disk without
+re-running anything.
+
+``make_record`` builds the §6 record from the item + the run artifacts.
+``append_record`` stores it append-only (one record per commit).
 The clock is injected so the timestamp is deterministic in tests.
 """
 
@@ -11,7 +17,18 @@ The clock is injected so the timestamp is deterministic in tests.
 def make_record(item, opts=None, *, clock=None):
     """Build a §6 provenance audit record from an item and run artifacts.
 
-    Returns a dict with all §6 fields in snake_case.
+    Args:
+        item: Backlog item dict providing ``id``, ``title``, and ``path``.
+        opts: Optional dict of run-artifact fields: ``commit_sha``, ``prompt``,
+            ``attempts``, ``gate_output``, ``tests_collected``, ``coverage``,
+            ``guard_results``, ``verifier_verdict``, ``verifier_rationale``,
+            ``final_diff``, and ``lessons_applied``.
+        clock: Zero-argument callable returning a timestamp string or value.
+            When None the ``timestamp`` field is recorded as None.
+
+    Returns:
+        A dict with all §6 provenance fields in snake_case, ready to be
+        passed to ``append_record``.
     """
     opts = opts or {}
     record = {}
@@ -34,5 +51,13 @@ def make_record(item, opts=None, *, clock=None):
 
 
 def append_record(store, record):
-    """Return a new list with *record* appended to *store* (append-only, no mutation)."""
+    """Return a new list with record appended to store (append-only, no mutation).
+
+    Args:
+        store: Existing list of provenance record dicts.
+        record: New provenance record dict to append.
+
+    Returns:
+        A new list containing all records from store followed by record.
+    """
     return [*store, record]

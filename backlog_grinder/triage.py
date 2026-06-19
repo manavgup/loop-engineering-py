@@ -1,13 +1,31 @@
-"""
-Triage module: summarise backlog items and render loop-state markdown.
+# SPDX-License-Identifier: MIT
+"""Triage module: summarise backlog items and render loop-state markdown.
 
-Deny is injected, never hardcoded (concept §7 — no module carries assumptions).
-Segment match so 'auth' flags backend/auth/x.py but not backend/oauth_helper.py.
+Location: backlog_grinder/triage.py
+Authors: Manav Gupta
+
+Deny-list is injected at call time via the *options* dict, never hardcoded
+(concept §7 — no module carries assumptions).  Path segment matching ensures
+that ``"auth"`` flags ``backend/auth/x.py`` but not ``backend/oauth_helper.py``.
 """
 
 
 def summarize(items: list[dict]) -> dict:
-    """Return totals (total, stale, queueable) and breakdowns by_severity / by_category."""
+    """Return aggregate counts and per-field breakdowns for a list of backlog items.
+
+    Args:
+        items: A list of backlog item dicts.  Each dict must contain
+            ``"severity"`` (str), ``"category"`` (str), and ``"stale"`` (bool).
+
+    Returns:
+        A dict with the following keys:
+
+        - ``"total"`` — total number of items.
+        - ``"stale"`` — count of items whose ``stale`` flag is truthy.
+        - ``"queueable"`` — ``total - stale``.
+        - ``"by_severity"`` — ``{severity: count}`` mapping.
+        - ``"by_category"`` — ``{category: count}`` mapping.
+    """
     by_severity: dict = {}
     by_category: dict = {}
     stale = 0
@@ -28,7 +46,27 @@ def summarize(items: list[dict]) -> dict:
 
 
 def to_state_markdown(items: list[dict], options: dict | None = None) -> str:
-    """Render the full loop-state markdown document for the given items and options dict."""
+    """Render the full loop-state markdown document for a list of backlog items.
+
+    Non-stale items are placed under the ``## Queue`` heading as unchecked
+    checkboxes.  Stale items are collected under
+    ``## Stale / needs human re-validation``.  Any non-stale item whose path
+    contains a segment that appears in the deny-list receives a
+    ``[DENYLIST: human gate]`` suffix.
+
+    Args:
+        items: A list of backlog item dicts.  Each dict must contain
+            ``"id"`` (str), ``"title"`` (str), ``"path"`` (str), and
+            ``"stale"`` (bool).
+        options: Optional configuration dict.  Recognised keys:
+
+            - ``"project_name"`` (str) — used in the document heading.
+            - ``"deny"`` (list[str]) — path segments that trigger the denylist
+              label; defaults to an empty list.
+
+    Returns:
+        A single string containing the rendered markdown document.
+    """
     options = options or {}
     deny = options.get("deny", [])
     lines = ["# Loop State — " + options.get("project_name", ""), "", "## Queue", ""]

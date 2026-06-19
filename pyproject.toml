@@ -28,10 +28,27 @@ addopts = "-q"
 branch = false
 source = ["backlog_grinder"]
 
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "def __repr__",
+]
+
 [tool.ruff]
+# Note: mcp-context-forge uses 200; we keep 100 (more readable for a small codebase).
 line-length = 100
 target-version = "py39"
 
 [tool.ruff.lint]
-# PEP 8 (pycodestyle E/W), pyflakes F, import order I, naming N.
-select = ["E", "W", "F", "I", "N", "UP"]
+# PEP 8 (E/W), pyflakes (F), import order (I), naming (N), pyupgrade (UP),
+# docstring presence (D1xx) + Google-arg completeness (D417), logging format (G).
+select = ["E", "W", "F", "I", "N", "UP", "D1", "D417", "G"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests don't need module/function docstrings.
+"tests/**" = ["D1", "D417"]

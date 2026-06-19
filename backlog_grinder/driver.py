@@ -1,4 +1,12 @@
-"""Driver: top-level loop that runs items through implement → gate → guard → verify → commit.
+# SPDX-License-Identifier: MIT
+"""Top-level loop that runs items through implement → gate → guard → verify → commit.
+
+Location: backlog_grinder/driver.py
+Authors: Manav Gupta
+
+Orchestrates the full per-item retry cycle and the outer queue drain.  Pure
+business logic: all I/O (git, gate, implementer, verifier, provenance) is
+injected via the ``deps`` dict so the core is independently testable.
 
 Public API
 ----------
@@ -36,7 +44,7 @@ TERMINAL = ["done", "abandoned", "parked-infra", "parked-flaky", "blocked-covera
 
 
 def _run_gate_confirmed(deps, gate_cmd, cwd):
-    """Flake-confirm (§3.4): re-run a red ONCE before trusting it."""
+    """Flake-confirm (§3.4): re-run a red gate ONCE before trusting it."""
     result = deps["run_gate"](gate_cmd, cwd)
     if not result["passed"]:
         result = deps["run_gate"](gate_cmd, cwd)
@@ -80,10 +88,36 @@ def _fail(
 
 
 def run_item(item, *, deps, state, gate_cmd, allow=None, deny=None, max_attempts=3):
-    """Run one item through the implement→gate→guard→verify→commit cycle.
+    """Run one backlog item through the implement → gate → guard → verify → commit cycle.
 
-    Mutates item in place (attempts, failures, status) and persists to state.
-    Returns the (mutated) item.
+    Calls the injected implementer, runs the gate (with flake-confirmation), checks
+    guard rules and coverage, then calls the verifier.  On approval the change is
+    committed and the item is marked done; on failure the tree is restored and the
+    item is either left pending (for retry) or abandoned.
+
+    Args:
+        item: Backlog item dict (mutated in place: ``attempts``, ``failures``,
+            ``status``, ``commit_sha``).
+        deps: Dict of injected callables and sub-dicts:
+            ``implementer`` — callable(item, prompt) that edits the working tree;
+            ``verifier`` — callable(item, diff, warnings) -> verdict dict;
+            ``run_gate`` — callable(cmd, cwd) -> gate result dict;
+            ``git`` — dict with ``diff``, ``commit``, ``head``, ``restore`` callables;
+            ``provenance`` — optional callable(record) to append audit entry;
+            ``budget`` — optional dict with ``ok()`` callable;
+            ``persist_state`` — optional callable(state) to checkpoint state;
+            ``cwd`` — optional str working-directory path.
+        state: Mutable state dict managed by the persist module.
+        gate_cmd: Shell command (str or list) to run the test suite.
+        allow: Optional list of path prefixes the diff is allowed to touch.
+            When non-empty, any file outside the list is a hard violation.
+        deny: Optional list of path prefixes that must not be touched (advisory
+            to the verifier; hard enforcement is done by the allowlist).
+        max_attempts: Maximum number of attempts before an item is abandoned.
+
+    Returns:
+        The mutated ``item`` dict with updated ``status``, ``attempts``, and
+        ``failures``.
     """
     cwd = deps.get("cwd")
     # Freshly-parsed backlog items have no attempts/failures yet — initialize (§8).
@@ -167,10 +201,28 @@ def run_item(item, *, deps, state, gate_cmd, allow=None, deny=None, max_attempts
 def run_queue(
     queue, *, deps, state=None, gate_cmd, allow=None, deny=None, max_attempts=3, stop_file=None
 ):
-    """Iterate pending items in queue, calling run_item on each until terminal or halted.
+    """Drain the pending items in a queue by calling ``run_item`` on each in turn.
 
-    Checkpoints state after every item. Halts early when the budget is exhausted.
-    Returns the (mutated) queue.
+    Iterates items returned by ``pending_items`` (skipping stale, done, and
+    abandoned entries).  Halts early when the injected budget is exhausted.
+    Checkpoints state to disk after every item if ``deps['persist_state']`` is
+    provided.
+
+    Args:
+        queue: List of backlog item dicts (mutated in place by ``run_item``).
+        deps: Dict of injected callables — same shape as ``run_item``'s ``deps``.
+            ``budget`` — optional dict with ``ok()`` callable; absence means unlimited.
+            ``persist_state`` — optional callable(state) called after each item.
+        state: Mutable state dict managed by the persist module.
+        gate_cmd: Shell command (str or list) passed through to ``run_item``.
+        allow: Optional list of path prefixes forwarded to ``run_item``.
+        deny: Optional list of path prefixes forwarded to ``run_item``.
+        max_attempts: Maximum attempts per item before abandonment.
+        stop_file: Reserved parameter (not yet active in the pure driver).
+
+    Returns:
+        The (mutated) ``queue`` list after processing all pending items or
+        exhausting the budget.
     """
     budget = deps.get("budget")
     persist = deps.get("persist_state")

@@ -36,3 +36,4 @@ jobs:
       - run: python -m pip install -e '.[dev]'
       - run: ruff check backlog_grinder tests
       - run: pytest --cov=backlog_grinder --cov-report=xml --cov-report=term-missing --cov-fail-under=85 -q
+      - run: pytest --doctest-modules backlog_grinder -q

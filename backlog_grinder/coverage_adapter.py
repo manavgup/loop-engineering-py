@@ -1,11 +1,29 @@
-"""Adapters for reading LCOV and Cobertura XML coverage reports into a common dict shape."""
+# SPDX-License-Identifier: MIT
+"""Adapters for reading LCOV and Cobertura XML coverage reports into a common dict shape.
+
+Location: backlog_grinder/coverage_adapter.py
+Authors: Manav Gupta
+
+All public functions return ``{filename: set_of_line_numbers}`` dicts so the
+rest of the harness can reason about coverage in a format-agnostic way.
+``load_coverage`` is the main entry point; the individual ``parse_*`` and
+``cobertura_sources`` functions are exposed for testing.
+"""
 
 import os
 import xml.etree.ElementTree as ET
 
 
 def parse_lcov(text: str) -> dict[str, set[int]]:
-    """Parse an LCOV text report and return {filename: set_of_executed_line_numbers}."""
+    """Parse an LCOV text report into a mapping of filename to executed line numbers.
+
+    Args:
+        text: Raw LCOV report content as a string.
+
+    Returns:
+        A dict mapping each source filename to the set of line numbers that were
+        executed at least once (``DA`` count > 0).
+    """
     files: dict[str, set[int]] = {}
     current = ""
     for line in text.splitlines():
@@ -20,7 +38,15 @@ def parse_lcov(text: str) -> dict[str, set[int]]:
 
 
 def parse_cobertura(text: str) -> dict[str, set[int]]:
-    """Parse a Cobertura XML report and return {filename: set_of_hit_line_numbers}."""
+    """Parse a Cobertura XML report into a mapping of filename to hit line numbers.
+
+    Args:
+        text: Raw Cobertura XML report content as a string.
+
+    Returns:
+        A dict mapping each source filename to the set of line numbers whose
+        ``hits`` attribute is greater than zero.
+    """
     root = ET.fromstring(text)
     files: dict[str, set[int]] = {}
     for cls in root.iter("class"):
@@ -32,11 +58,18 @@ def parse_cobertura(text: str) -> dict[str, set[int]]:
 
 
 def parse_cobertura_executable(text: str) -> dict[str, set[int]]:
-    """Return {filename: set_of_listed_line_numbers} — every line the report lists (hit OR miss).
+    """Parse a Cobertura XML report into a mapping of filename to all listed line numbers.
 
-    These are the lines coverage.py considers executable. Lines absent from this set are
-    NON-executable (docstrings, blanks, multi-line-literal continuations) and can never be
-    "executed by a test".
+    Every line the report lists is considered executable (hit OR miss).  Lines
+    absent from this set are NON-executable (docstrings, blanks, multi-line-literal
+    continuations) and can never be "executed by a test".
+
+    Args:
+        text: Raw Cobertura XML report content as a string.
+
+    Returns:
+        A dict mapping each source filename to the set of all line numbers the
+        report records, regardless of hit count.
     """
     root = ET.fromstring(text)
     files: dict[str, set[int]] = {}
@@ -48,7 +81,14 @@ def parse_cobertura_executable(text: str) -> dict[str, set[int]]:
 
 
 def cobertura_sources(text: str) -> list[str]:
-    """Extract the list of <source> root paths from a Cobertura XML string."""
+    """Extract the list of ``<source>`` root paths from a Cobertura XML string.
+
+    Args:
+        text: Raw Cobertura XML report content as a string.
+
+    Returns:
+        A list of source-root path strings in document order.
+    """
     root = ET.fromstring(text)
     return [source.text for source in root.iter("source")]
 
@@ -56,9 +96,10 @@ def cobertura_sources(text: str) -> list[str]:
 def _remap(flat: dict[str, set[int]], root: str, repo_cwd: str) -> dict[str, set[int]]:
     """Make cobertura filenames repo-relative so keys match what ``git diff`` emits.
 
-    realpath both sides: coverage.py writes the resolved <source> path (e.g. /private/var/...
-    on macOS) while repo_cwd may be the symlink (/var/...); without resolving, relpath yields
-    a bogus ../../ key.
+    Resolves both sides with ``os.path.realpath`` because coverage.py writes the
+    resolved ``<source>`` path (e.g. ``/private/var/...`` on macOS) while
+    ``repo_cwd`` may be a symlink (``/var/...``); without resolving, ``relpath``
+    yields a bogus ``../../`` key.
     """
     out: dict[str, set[int]] = {}
     for name, lines in flat.items():
@@ -70,12 +111,13 @@ def _remap(flat: dict[str, set[int]], root: str, repo_cwd: str) -> dict[str, set
 def _augment_non_executable(
     hit: dict[str, set[int]], executable: dict[str, set[int]], repo_cwd: str
 ) -> None:
-    """Mark every NON-executable source line (not listed by the report) as covered.
+    """Mark every non-executable source line as covered in-place.
 
-    Coverage-of-change requires every changed line to be executed, but trace-based coverage
-    (coverage.py) reports only executable statements — a whole-file diff's docstrings/blanks/
-    continuations would otherwise be flagged uncovered though no test could ever execute them.
-    Executable-but-unhit lines are left out, so they stay real coverage gaps.
+    Coverage-of-change requires every changed line to be executed, but
+    trace-based coverage (coverage.py) reports only executable statements.  A
+    whole-file diff's docstrings, blanks, and continuation lines would otherwise
+    be flagged as uncovered even though no test could ever execute them.
+    Executable-but-unhit lines are left out so they remain real coverage gaps.
     """
     for name, exec_lines in executable.items():
         try:
@@ -88,11 +130,24 @@ def _augment_non_executable(
 
 
 def load_coverage(*, format: str, file: str, repo_cwd: str | None = None) -> dict[str, set[int]]:
-    """Load a coverage report from *file* and return {filename: set_of_executed_line_numbers}.
+    """Load a coverage report from *file* and return a filename-to-lines mapping.
 
-    *format* must be ``"lcov"`` or ``"cobertura"``.  When *repo_cwd* is given, Cobertura
-    filenames (relative to the ``<source>`` root) are remapped to repo-relative paths and
-    non-executable source lines are treated as satisfied (see :func:`_augment_non_executable`).
+    Args:
+        format: Coverage report format; must be ``"lcov"``, ``"cobertura"``, or
+            ``"coveragepy"`` (alias for ``"cobertura"``).
+        file: Path to the coverage report file on disk.
+        repo_cwd: Optional path to the repository root.  When provided for
+            Cobertura reports, filenames are remapped to repo-relative paths and
+            non-executable source lines are treated as satisfied (see
+            ``_augment_non_executable``).
+
+    Returns:
+        A dict mapping each source filename to the set of line numbers that were
+        executed (or are non-executable and therefore implicitly satisfied).
+
+    Raises:
+        ValueError: If *format* is not one of the supported values.
+        OSError: If *file* cannot be opened for reading.
     """
     with open(file) as handle:
         text = handle.read()

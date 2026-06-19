@@ -1,4 +1,8 @@
+# SPDX-License-Identifier: MIT
 """Feedback utilities: failure fingerprinting, retry-prompt construction, lesson management.
+
+Location: backlog_grinder/feedback.py
+Authors: Manav Gupta
 
 Canonical dict shapes
 ---------------------
@@ -41,7 +45,20 @@ def _normalize(text: str) -> str:
 
 
 def signature(gate_output: str) -> str:
-    """Return a 12-hex-char SHA-1 of the normalised gate output (volatile bits stripped)."""
+    """Return a 12-hex-char SHA-1 of the normalised gate output (volatile bits stripped).
+
+    Args:
+        gate_output: Raw string output from the gate (may contain addresses/timings).
+
+    Returns:
+        A 12-character lowercase hex string identifying the normalised gate output.
+
+    Examples:
+        >>> signature("Error: test failed")
+        '7e2e6ec17da5'
+        >>> signature("Error at 0x7fff1234 took 1.23s")
+        '580145bbce7f'
+    """
     return hashlib.sha1(_normalize(gate_output).encode()).hexdigest()[:12]
 
 
@@ -56,6 +73,20 @@ def failure_fingerprint(record: dict) -> str:
     A failure's identity is the FULL rejection reason, not gate output alone: a coverage or
     scope rejection leaves the gate green, so keying on gate output would collapse two
     different rejections into a false "repeat" and abandon the item prematurely.
+
+    Args:
+        record: Failure record dict containing ``gate_output`` (str),
+            ``guard_violations`` (list[str]), and ``coverage_uncovered`` (list[str]).
+
+    Returns:
+        A 12-character lowercase hex string identifying the full rejection reason.
+
+    Examples:
+        >>> failure_fingerprint(
+        ...     {"gate_output": "FAIL: assertion error",
+        ...      "guard_violations": [], "coverage_uncovered": []}
+        ... )
+        '1b6899112f81'
     """
     parts = [
         _normalize(record["gate_output"]),
@@ -71,7 +102,15 @@ def failure_fingerprint(record: dict) -> str:
 
 
 def is_repeated_failure(prev_records: list[dict], current_record: dict) -> bool:
-    """Return True iff current_record's full fingerprint matches any record in prev_records."""
+    """Return True iff current_record's full fingerprint matches any record in prev_records.
+
+    Args:
+        prev_records: List of prior failure record dicts to compare against.
+        current_record: The new failure record dict being evaluated.
+
+    Returns:
+        True if the current record's fingerprint matches any previous record; False otherwise.
+    """
     fingerprint = failure_fingerprint(current_record)
     return any(failure_fingerprint(record) == fingerprint for record in prev_records)
 
@@ -82,7 +121,16 @@ def is_repeated_failure(prev_records: list[dict], current_record: dict) -> bool:
 
 
 def build_retry_prompt(item: dict, base_prompt: str, failures: list[dict] | None = None) -> str:
-    """Build a retry prompt embedding prior failure details (gate, guards, coverage)."""
+    """Build a retry prompt embedding prior failure details (gate, guards, coverage).
+
+    Args:
+        item: The backlog item dict (currently unused, reserved for future context).
+        base_prompt: The original prompt string to prepend before failure details.
+        failures: List of failure record dicts from prior attempts; defaults to None.
+
+    Returns:
+        A newline-joined string combining base_prompt with per-attempt failure summaries.
+    """
     lines = [base_prompt]
     for failure in failures:
         lines.append(f"Attempt {failure['attempt']} failed")
@@ -102,7 +150,16 @@ def build_retry_prompt(item: dict, base_prompt: str, failures: list[dict] | None
 
 
 def append_lesson(lessons: list[dict], lesson: dict) -> list[dict]:
-    """Return a new lessons list with lesson appended, deduplicated by pattern."""
+    """Return a new lessons list with lesson appended, deduplicated by pattern.
+
+    Args:
+        lessons: Existing list of lesson dicts.
+        lesson: New lesson dict to append (skipped if its pattern already exists).
+
+    Returns:
+        A new list containing all original lessons plus the new lesson, or the
+        original list unchanged if the pattern was already present.
+    """
     if any(existing["pattern"] == lesson["pattern"] for existing in lessons):
         return lessons
     return lessons + [lesson]
@@ -114,7 +171,17 @@ def append_lesson(lessons: list[dict], lesson: dict) -> list[dict]:
 
 
 def relevant_lessons(store: list[dict], item: dict, cap: int = _LESSON_CAP) -> list[dict]:
-    """Return active lessons scoped to item's category, ranked by confidence, capped to cap."""
+    """Return active lessons scoped to item's category, ranked by confidence, capped to cap.
+
+    Args:
+        store: Full list of lesson dicts (may include evicted lessons).
+        item: Backlog item dict; its ``category`` field filters matching lessons.
+        cap: Maximum number of lessons to return.
+
+    Returns:
+        A list of up to ``cap`` active lesson dicts matching item's category,
+        sorted by confidence descending.
+    """
     matches = [
         lesson
         for lesson in store
@@ -130,7 +197,16 @@ def relevant_lessons(store: list[dict], item: dict, cap: int = _LESSON_CAP) -> l
 
 
 def retract_lesson(store: list[dict], lesson_id: str) -> list[dict]:
-    """Decrement confidence of lesson_id in store; evict it when confidence falls to threshold."""
+    """Decrement confidence of lesson_id in store; evict it when confidence falls to threshold.
+
+    Args:
+        store: List of lesson dicts (mutated in place for the matched lesson).
+        lesson_id: The ``id`` value of the lesson to retract.
+
+    Returns:
+        The same store list with the matched lesson's confidence decremented
+        (and status set to ``"evicted"`` if confidence reaches the eviction threshold).
+    """
     for lesson in store:
         if lesson["id"] == lesson_id:
             lesson["confidence"] -= _RETRACT_DROP
@@ -145,7 +221,20 @@ def retract_lesson(store: list[dict], lesson_id: str) -> list[dict]:
 
 
 def make_lessons_adapter(store: list[dict], *, cap: int = _LESSON_CAP) -> object:
-    """Return an adapter exposing relevant(item) and retract(item)."""
+    """Return an adapter exposing relevant(item) and retract(item).
+
+    Args:
+        store: The shared lesson store list to read from and mutate.
+        cap: Maximum number of lessons to surface per item.
+
+    Returns:
+        An object with two methods:
+
+        - ``relevant(item)`` — returns active lessons for item's category (up to ``cap``),
+          recording which lesson IDs were applied.
+        - ``retract(item)`` — decrements confidence for every lesson previously applied
+          to item via ``relevant()``.
+    """
     applied: dict[str, list[str]] = {}
 
     class _LessonsAdapter:
